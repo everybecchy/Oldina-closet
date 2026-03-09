@@ -24,6 +24,14 @@ export async function POST(request: Request) {
       )
     }
 
+    // Verificar se o email foi confirmado
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: "Email não confirmado. Verifique sua caixa de entrada" },
+        { status: 401 }
+      )
+    }
+
     const isValid = await verifyPassword(password, user.password)
 
     if (!isValid) {
@@ -46,7 +54,7 @@ export async function POST(request: Request) {
       redirectTo: user.isAdmin ? "/dashboard" : "/minha-conta",
     })
   } catch (error) {
-    console.error("Erro no login:", error)
+    console.error("[v0] Erro no login:", error)
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

@@ -136,13 +136,16 @@ export default function LoginClient() {
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-3">
             <div className="text-center text-sm text-muted-foreground">
               Ainda nao tem uma conta?{" "}
               <Link href={redirectTo ? `/cadastro?redirect=${redirectTo}` : "/cadastro"} className="text-primary hover:underline font-medium">
                 Criar conta
               </Link>
             </div>
+            <Link href="/esqueci-senha" className="text-center text-sm text-muted-foreground hover:text-foreground">
+              Esqueci minha senha
+            </Link>
             <Link href="/" className="text-center text-sm text-muted-foreground hover:text-foreground">
               Voltar para a loja
             </Link>
