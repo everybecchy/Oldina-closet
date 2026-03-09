@@ -10,8 +10,14 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    // Buscar pedidos pelo userId OU pelo email do cliente
     const orders = await prisma.order.findMany({
-      where: { userId: session.id },
+      where: {
+        OR: [
+          { userId: session.id },
+          { customerEmail: session.email },
+        ]
+      },
       include: {
         items: {
           include: {
