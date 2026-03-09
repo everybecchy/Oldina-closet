@@ -36,10 +36,13 @@ interface Order {
   customerEmail: string
   customerPhone: string | null
   address: string
+  number: string | null
+  complement: string | null
   neighborhood: string | null
   city: string
   state: string
   zipCode: string
+  shippingMethod: string | null
   status: string
   subtotal: number
   shipping: number
@@ -271,7 +274,45 @@ export default function AdminOrdersPage() {
                   {selectedOrder.customerPhone && (
                     <p><span className="font-medium text-foreground">Telefone:</span> {selectedOrder.customerPhone}</p>
                   )}
-                  <p><span className="font-medium text-foreground">Endereço:</span> {selectedOrder.address}, {selectedOrder.neighborhood}, {selectedOrder.city} - {selectedOrder.state}, {selectedOrder.zipCode}</p>
+                </div>
+              </div>
+
+              {/* Shipping info */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-foreground">Informações de Entrega</h4>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>
+                    <span className="font-medium text-foreground">Endereço:</span>{' '}
+                    {selectedOrder.address}
+                    {selectedOrder.number && `, ${selectedOrder.number}`}
+                    {selectedOrder.complement && ` - ${selectedOrder.complement}`}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Bairro:</span>{' '}
+                    {selectedOrder.neighborhood || '-'}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Cidade:</span>{' '}
+                    {selectedOrder.city} - {selectedOrder.state}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">CEP:</span>{' '}
+                    {selectedOrder.zipCode}
+                  </p>
+                  {selectedOrder.shippingMethod && (
+                    <p>
+                      <span className="font-medium text-foreground">Método de Envio:</span>{' '}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {selectedOrder.shippingMethod}
+                      </span>
+                    </p>
+                  )}
+                  <p>
+                    <span className="font-medium text-foreground">Valor do Frete:</span>{' '}
+                    <span className={Number(selectedOrder.shipping) === 0 ? 'text-green-600' : ''}>
+                      {Number(selectedOrder.shipping) === 0 ? 'Grátis' : formatPrice(Number(selectedOrder.shipping))}
+                    </span>
+                  </p>
                 </div>
               </div>
 
