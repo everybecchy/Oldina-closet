@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth'
 
 // GET - Listar todos os vídeos
 export async function GET() {
@@ -18,7 +18,7 @@ export async function GET() {
 // POST - Criar novo vídeo
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionUser()
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 // PUT - Atualizar vídeo
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionUser()
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Remover vídeo
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionUser()
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }

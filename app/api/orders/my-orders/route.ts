@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth'
 
 export async function GET() {
   try {
-    const session = await getSession()
+    const session = await getSessionUser()
     
     if (!session) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     const orders = await prisma.order.findMany({
-      where: { userId: session.userId },
+      where: { userId: session.id },
       include: {
         items: {
           include: {

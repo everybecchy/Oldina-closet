@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth'
 
 // GET - Listar todos os cupons
 export async function GET() {
@@ -18,7 +18,7 @@ export async function GET() {
 // POST - Criar novo cupom
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionUser()
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 // PUT - Atualizar cupom
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionUser()
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Remover cupom
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSessionUser()
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
