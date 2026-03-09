@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import { Plus, Pencil, Trash2, MoreHorizontal, Loader2, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,83 +21,147 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUpload } from '@/components/ui/image-upload'
 
-const initialCategories = [
-  { id: '1', name: 'Anéis', slug: 'aneis', description: 'Anéis elegantes para todas as ocasiões', products: 15 },
-  { id: '2', name: 'Colares', slug: 'colares', description: 'Colares sofisticados e delicados', products: 12 },
-  { id: '3', name: 'Brincos', slug: 'brincos', description: 'Brincos que realçam sua beleza', products: 18 },
-  { id: '4', name: 'Pulseiras', slug: 'pulseiras', description: 'Pulseiras para todos os estilos', products: 8 },
-  { id: '5', name: 'Conjuntos', slug: 'conjuntos', description: 'Conjuntos harmoniosos e exclusivos', products: 5 },
-]
+interface Category {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  image: string | null
+  productCount: number
+  createdAt: string
+}
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState(initialCategories)
+  const [categories, setCategories] = useState<Category[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<typeof initialCategories[0] | null>(null)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
-    slug: '',
     description: '',
+    image: '',
   })
 
-  const handleOpenDialog = (category?: typeof initialCategories[0]) => {
+  // Buscar categorias da API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/admin/categories')
+        const data = await response.json()
+        
+        if (data.success && data.categories) {
+          setCategories(data.categories)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar categorias:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchCategories()
+  }, [])
+
+  const handleOpenDialog = (category?: Category) => {
     if (category) {
       setEditingCategory(category)
       setFormData({
         name: category.name,
-        slug: category.slug,
-        description: category.description,
+        description: category.description || '',
+        image: category.image || '',
       })
     } else {
       setEditingCategory(null)
       setFormData({
         name: '',
-        slug: '',
         description: '',
+        image: '',
       })
     }
     setIsDialogOpen(true)
   }
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/[^\w-]+/g, '')
-  }
-
-  const handleNameChange = (name: string) => {
-    setFormData(prev => ({
-      ...prev,
-      name,
-      slug: editingCategory ? prev.slug : generateSlug(name),
-    }))
-  }
-
-  const handleSave = () => {
-    if (editingCategory) {
-      setCategories(prev => prev.map(c => 
-        c.id === editingCategory.id 
-          ? { ...c, name: formData.name, slug: formData.slug, description: formData.description }
-          : c
-      ))
-    } else {
-      const newCategory = {
-        id: Date.now().toString(),
-        name: formData.name,
-        slug: formData.slug,
-        description: formData.description,
-        products: 0,
-      }
-      setCategories(prev => [...prev, newCategory])
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      alert('O nome da categoria e obrigatorio')
+      return
     }
-    setIsDialogOpen(false)
+
+    setIsSaving(true)
+    try {
+      const payload = {
+        id: editingCategory?.id,
+        name: formData.name,
+        description: formData.description || null,
+        image: formData.image || null,
+      }
+
+      const response = await fetch('/api/admin/categories', {
+        method: editingCategory ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        if (editingCategory) {
+          setCategories(prev => prev.map(c => 
+            c.id === editingCategory.id 
+              ? { ...c, ...data.category, productCount: c.productCount }
+              : c
+          ))
+        } else {
+          setCategories(prev => [...prev, { ...data.category, productCount: 0 }])
+        }
+        setIsDialogOpen(false)
+      } else {
+        alert(data.error || 'Erro ao salvar categoria')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar:', error)
+      alert('Erro ao salvar categoria')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setCategories(prev => prev.filter(c => c.id !== id))
+  const handleDelete = async (id: string) => {
+    const category = categories.find(c => c.id === id)
+    if (category && category.productCount > 0) {
+      alert('Nao e possivel excluir uma categoria que possui produtos vinculados')
+      return
+    }
+
+    if (!confirm('Tem certeza que deseja excluir esta categoria?')) return
+    
+    try {
+      const response = await fetch(`/api/admin/categories?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success || response.ok) {
+        setCategories(prev => prev.filter(c => c.id !== id))
+      } else {
+        alert(data.error || 'Erro ao excluir categoria')
+      }
+    } catch (error) {
+      console.error('Erro ao excluir:', error)
+      alert('Erro ao excluir categoria')
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -130,34 +195,39 @@ export default function AdminCategoriesPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Ex: Anéis"
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ex: Aneis"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                  placeholder="aneis"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Usado na URL: /produtos?categoria={formData.slug || 'slug'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description">Descricao</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Descrição da categoria..."
+                  placeholder="Descricao da categoria..."
                   rows={3}
                 />
               </div>
-              <Button onClick={handleSave} className="w-full bg-primary hover:bg-primary/90">
-                {editingCategory ? 'Salvar Alterações' : 'Criar Categoria'}
+              <ImageUpload
+                label="Foto de Capa"
+                value={formData.image}
+                onChange={(val) => setFormData(prev => ({ ...prev, image: val }))}
+                aspectRatio="thumbnail"
+              />
+              <Button 
+                onClick={handleSave} 
+                className="w-full bg-primary hover:bg-primary/90"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingCategory ? 'Salvar Alteracoes' : 'Criar Categoria'
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -167,7 +237,22 @@ export default function AdminCategoriesPage() {
       {/* Categories grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map((category) => (
-          <Card key={category.id}>
+          <Card key={category.id} className="overflow-hidden">
+            {/* Cover image */}
+            <div className="relative h-32 bg-muted">
+              {category.image ? (
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
+                </div>
+              )}
+            </div>
             <CardHeader className="flex flex-row items-start justify-between pb-2">
               <CardTitle className="text-lg font-medium">{category.name}</CardTitle>
               <DropdownMenu>
@@ -184,6 +269,7 @@ export default function AdminCategoriesPage() {
                   <DropdownMenuItem 
                     onClick={() => handleDelete(category.id)}
                     className="text-destructive"
+                    disabled={category.productCount > 0}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Excluir
@@ -192,14 +278,35 @@ export default function AdminCategoriesPage() {
               </DropdownMenu>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
+              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                {category.description || 'Sem descricao'}
+              </p>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Slug: <code className="bg-muted px-1 rounded">{category.slug}</code></span>
-                <span className="text-foreground font-medium">{category.products} produtos</span>
+                <span className="text-muted-foreground">
+                  Slug: <code className="bg-muted px-1 rounded">{category.slug}</code>
+                </span>
+                <span className="text-foreground font-medium">
+                  {category.productCount} produtos
+                </span>
               </div>
             </CardContent>
           </Card>
         ))}
+
+        {categories.length === 0 && (
+          <div className="col-span-full text-center py-12">
+            <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+            <p className="text-muted-foreground">Nenhuma categoria cadastrada</p>
+            <Button 
+              onClick={() => handleOpenDialog()} 
+              variant="outline" 
+              className="mt-4"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Criar primeira categoria
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
