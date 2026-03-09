@@ -180,3 +180,21 @@ model Favorite {
 
   @@unique([userId, productId])
 }
+
+model SiteSettings {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  heroTagline     String?
+  heroTitle       String?
+  heroTitleAccent String?
+  heroDescription String?
+  heroImage       String?  @db.Text
+  heroStat1Value  String?
+  heroStat1Label  String?
+  heroStat2Value  String?
+  heroStat2Label  String?
+  heroStat3Value  String?
+  heroStat3Label  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
