@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendEmail } from "@/lib/email"
+import { getSessionUser } from "@/lib/auth"
 
 // Tipos para a resposta da PenguimPay
 interface PenguimPayPixResponse {
@@ -23,6 +24,9 @@ interface PenguimPayPixResponse {
 
 export async function POST(request: Request) {
   try {
+    // Verificar se o usuário está logado (opcional, pedido pode ser feito como convidado)
+    const session = await getSessionUser()
+    
     const body = await request.json()
     
     const {
@@ -120,6 +124,7 @@ export async function POST(request: Request) {
     const order = await prisma.order.create({
       data: {
         orderNumber,
+        userId: session?.id || null, // Vincular ao usuário se estiver logado
         customerName,
         customerEmail,
         customerPhone,
