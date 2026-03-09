@@ -220,39 +220,71 @@ export default function CheckoutPage() {
   const discount = appliedCoupon?.discount || 0
   const total = cartTotal + shippingCost - discount
 
-  // Criar pagamento PIX
+  // Criar pedido e pagamento PIX
   const createPixPayment = async () => {
     setIsLoading(true)
 
     try {
-      const newOrderNumber = `OC${Date.now().toString().slice(-6)}`
-      setOrderNumber(newOrderNumber)
-
-      const response = await fetch("/api/pix/create", {
+      // Primeiro criar o pedido no banco
+      const orderResponse = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: total,
-          orderId: newOrderNumber,
           customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.phone,
+          address: formData.address,
+          number: formData.number,
+          complement: formData.complement,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.cep,
+          items: cart.map((item) => ({
+            productId: item.id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          subtotal: cartTotal,
+          shipping: shippingCost,
+          discount: discount,
+          couponCode: appliedCoupon?.code || null,
         }),
       })
 
-      const data = await response.json()
+      const orderData = await orderResponse.json()
 
-      if (!response.ok) {
-        throw new Error(data.error)
+      if (!orderResponse.ok) {
+        throw new Error(orderData.error || "Erro ao criar pedido")
+      }
+
+      setOrderNumber(orderData.order.orderNumber)
+
+      // Agora criar o PIX com o orderId real do banco
+      const pixResponse = await fetch("/api/pix/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: orderData.order.id,
+        }),
+      })
+
+      const pixData = await pixResponse.json()
+
+      if (!pixResponse.ok) {
+        throw new Error(pixData.error || "Erro ao gerar PIX")
       }
 
       setPixData({
-        qrCode: data.qrCode,
-        transactionId: data.transactionId,
-        expiresAt: data.expiresAt,
+        qrCode: pixData.payment.qrCode,
+        transactionId: pixData.payment.transactionId,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
       })
 
       setStep("payment")
     } catch (error) {
       console.error("Erro ao criar PIX:", error)
+      alert(error instanceof Error ? error.message : "Erro ao processar pedido")
     } finally {
       setIsLoading(false)
     }
