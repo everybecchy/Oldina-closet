@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Loader2, Eye, EyeOff } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 export default function LoginClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { login } = useAuth()
   const redirectTo = searchParams.get("redirect")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -27,30 +29,17 @@ export default function LoginClient() {
     setIsLoading(true)
     setError("")
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
+    const result = await login(formData.email, formData.password)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao fazer login")
-      }
-
-      if (redirectTo && !data.user?.isAdmin) {
-        router.push(redirectTo)
-      } else {
-        router.push(data.redirectTo)
-      }
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao fazer login")
-    } finally {
+    if (!result.success) {
+      setError(result.error || "Erro ao fazer login")
       setIsLoading(false)
+      return
     }
+
+    // Redirecionar após login bem sucedido
+    const destination = redirectTo || result.redirectTo || "/minha-conta"
+    router.push(destination)
   }
 
   return (
