@@ -10,7 +10,7 @@ import { Footer } from '@/components/store/footer'
 import { CartDrawer } from '@/components/store/cart-drawer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, ShoppingBag, Heart, MapPin, Settings, LogOut } from 'lucide-react'
+import { User, ShoppingBag, Heart, Settings, LogOut } from 'lucide-react'
 
 export default function MinhaContaPage() {
   const router = useRouter()
@@ -46,12 +46,6 @@ export default function MinhaContaPage() {
       title: 'Favoritos',
       description: 'Veja suas peças favoritas',
       href: '/favoritos'
-    },
-    {
-      icon: MapPin,
-      title: 'Endereços',
-      description: 'Gerencie seus endereços de entrega',
-      href: '/enderecos'
     },
     {
       icon: Settings,
