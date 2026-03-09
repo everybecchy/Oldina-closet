@@ -18,12 +18,9 @@ interface Product {
   categorySlug: string
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
-
 export function FeaturedSection() {
   const { data, isLoading } = useSWR<{ success: boolean; products: Product[] }>(
-    '/api/store/products?featured=true',
-    fetcher
+    '/api/store/products?featured=true'
   )
 
   const featuredProducts = data?.products || []

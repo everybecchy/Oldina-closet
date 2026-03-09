@@ -58,6 +58,7 @@ export default function CheckoutPage() {
     name: "",
     email: "",
     phone: "",
+    cpf: "",
     cep: "",
     address: "",
     number: "",
@@ -109,6 +110,14 @@ export default function CheckoutPage() {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
   }
 
+  const formatCpf = (value: string) => {
+    const numbers = value.replace(/\D/g, "")
+    if (numbers.length <= 3) return numbers
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`
+    if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
 
@@ -116,6 +125,8 @@ export default function CheckoutPage() {
       setFormData((prev) => ({ ...prev, [name]: formatCep(value) }))
     } else if (name === "phone") {
       setFormData((prev) => ({ ...prev, [name]: formatPhone(value) }))
+    } else if (name === "cpf") {
+      setFormData((prev) => ({ ...prev, [name]: formatCpf(value) }))
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }))
     }

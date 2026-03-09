@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       customerName,
       customerEmail,
       customerPhone,
+      customerDocument, // CPF do cliente
       // Endereço
       address,
       number,
@@ -77,36 +78,49 @@ export async function POST(request: Request) {
 
     if (penguimPayKey) {
       try {
-        // Limpar CPF do telefone e formatar documento
-        const cleanPhone = customerPhone.replace(/\D/g, "")
+        // Limpar documento (CPF) - remover pontos e tracos
+        const cleanDocument = customerDocument ? customerDocument.replace(/\D/g, "") : ""
         
-        const pixResponse = await fetch("https://api.penguimpay.com/api/external/pix/deposit", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${penguimPayKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            amount: total, // PenguimPay usa valor em reais (não centavos)
+        // Validar se tem CPF
+        if (!cleanDocument || cleanDocument.length !== 11) {
+          console.log("[v0] CPF nao fornecido ou invalido, usando PIX manual")
+          pixError = "CPF necessario para gerar PIX automatico"
+        } else {
+          const requestBody = {
+            amount: total, // PenguimPay usa valor em reais (nao centavos)
             client: {
               name: customerName,
-              document: "000.000.000-00", // Documento genérico pois não coletamos CPF
+              document: cleanDocument,
               email: customerEmail,
             },
-          }),
-        })
+          }
+          
+          console.log("[v0] Chamando PenguimPay com:", JSON.stringify(requestBody))
+          
+          const pixResponse = await fetch("https://api.penguimpay.com/api/external/pix/deposit", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${penguimPayKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          })
 
-        const responseData = await pixResponse.json()
-        
-        if (pixResponse.ok && responseData.success) {
-          pixData = responseData
-        } else {
-          console.error("[v0] PenguimPay erro:", responseData)
-          pixError = responseData.message || "Erro ao gerar PIX"
+          const responseData = await pixResponse.json()
+          
+          console.log("[v0] PenguimPay resposta status:", pixResponse.status)
+          console.log("[v0] PenguimPay resposta:", JSON.stringify(responseData))
+          
+          if (pixResponse.ok && responseData.success) {
+            pixData = responseData
+          } else {
+            console.error("[v0] PenguimPay erro:", responseData)
+            pixError = responseData.message || responseData.error || "Erro ao gerar PIX"
+          }
         }
       } catch (err) {
         console.error("[v0] Erro ao chamar PenguimPay:", err)
-        pixError = "Falha na comunicação com gateway de pagamento"
+        pixError = "Falha na comunicacao com gateway de pagamento"
       }
     }
 

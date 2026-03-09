@@ -17,10 +17,8 @@ interface Banner {
   order: number
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
-
 export function BannerCarousel() {
-  const { data: banners, isLoading } = useSWR<Banner[]>('/api/store/banners', fetcher)
+  const { data: banners, isLoading } = useSWR<Banner[]>('/api/store/banners')
   const [currentIndex, setCurrentIndex] = useState(0)
   
   const activeBanners = banners?.filter(b => b.active) || []

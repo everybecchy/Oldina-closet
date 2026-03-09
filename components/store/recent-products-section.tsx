@@ -19,12 +19,9 @@ interface Product {
   categorySlug: string
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
-
 export function RecentProductsSection() {
   const { data, isLoading } = useSWR<{ success: boolean; products: Product[] }>(
-    '/api/store/products?limit=12&sort=recent',
-    fetcher
+    '/api/store/products?limit=12&sort=recent'
   )
   
   const scrollContainerRef = useRef<HTMLDivElement>(null)
