@@ -2,10 +2,18 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, Menu, X, Search, User } from 'lucide-react'
+import { ShoppingBag, Menu, X, Search, User, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '@/lib/store-context'
+import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const navigation = [
   { name: 'Início', href: '/' },
@@ -19,6 +27,7 @@ const navigation = [
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { cartCount, setIsCartOpen } = useStore()
+  const { user, isAuthenticated, logout } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -39,11 +48,11 @@ export function Header() {
         <div className="flex lg:flex-1 justify-center lg:justify-start">
           <Link href="/" className="-m-1.5 p-1.5">
             <Image
-              src="/images/logo.jpeg"
+              src="/images/logo-ondina.png"
               alt="Ondina Closet"
-              width={140}
-              height={50}
-              className="h-12 w-auto"
+              width={160}
+              height={60}
+              className="h-14 w-auto"
               priority
             />
           </Link>
@@ -68,11 +77,41 @@ export function Header() {
           <Button variant="ghost" size="icon" className="hidden lg:flex">
             <Search className="h-5 w-5 text-foreground/70" />
           </Button>
-          <Button variant="ghost" size="icon" asChild className="hidden lg:flex">
-            <Link href="/admin">
-              <User className="h-5 w-5 text-foreground/70" />
-            </Link>
-          </Button>
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="hidden lg:flex">
+                  <User className="h-5 w-5 text-foreground/70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5 text-sm font-medium">{user?.name || user?.email}</div>
+                <DropdownMenuSeparator />
+                {user?.isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard">Painel Admin</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link href="/minha-conta">Minha Conta</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/meus-pedidos">Meus Pedidos</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="icon" asChild className="hidden lg:flex">
+              <Link href="/login">
+                <User className="h-5 w-5 text-foreground/70" />
+              </Link>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -96,11 +135,11 @@ export function Header() {
           <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-card shadow-xl">
             <div className="flex items-center justify-between px-4 py-4 border-b border-border">
               <Image
-                src="/images/logo.jpeg"
+                src="/images/logo-ondina.png"
                 alt="Ondina Closet"
-                width={100}
-                height={36}
-                className="h-10 w-auto"
+                width={120}
+                height={44}
+                className="h-11 w-auto"
               />
               <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
                 <X className="h-6 w-6" />
@@ -117,14 +156,44 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-border">
-                <Link
-                  href="/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block text-lg font-medium text-foreground hover:text-primary transition-colors"
-                >
-                  Área Admin
-                </Link>
+              <div className="pt-4 border-t border-border space-y-4">
+                {isAuthenticated ? (
+                  <>
+                    {user?.isAdmin && (
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block text-lg font-medium text-foreground hover:text-primary transition-colors"
+                      >
+                        Painel Admin
+                      </Link>
+                    )}
+                    <Link
+                      href="/minha-conta"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block text-lg font-medium text-foreground hover:text-primary transition-colors"
+                    >
+                      Minha Conta
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout()
+                        setMobileMenuOpen(false)
+                      }}
+                      className="block text-lg font-medium text-destructive hover:text-destructive/80 transition-colors"
+                    >
+                      Sair
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block text-lg font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    Entrar / Cadastrar
+                  </Link>
+                )}
               </div>
             </div>
           </div>
