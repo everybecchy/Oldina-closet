@@ -27,19 +27,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   const refreshSession = useCallback(async () => {
-    console.log("[v0] auth-context: refreshSession chamado")
     try {
       const response = await fetch("/api/auth/session")
-      console.log("[v0] auth-context: session response status:", response.status)
       const data = await response.json()
-      console.log("[v0] auth-context: session data:", data)
       setUser(data.user || null)
-      console.log("[v0] auth-context: user setado para:", data.user || null)
-    } catch (err) {
-      console.log("[v0] auth-context: erro no refreshSession:", err)
+    } catch {
       setUser(null)
     } finally {
-      console.log("[v0] auth-context: finalizando isLoading")
       setIsLoading(false)
     }
   }, [])
@@ -50,33 +44,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log("[v0] auth-context: Iniciando login para", email)
-      
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
 
-      console.log("[v0] auth-context: Response status:", response.status)
-      
       const data = await response.json()
-      console.log("[v0] auth-context: Response data:", data)
 
       if (!response.ok) {
-        console.log("[v0] auth-context: Login falhou:", data.error)
         return { success: false, error: data.error }
       }
 
-      console.log("[v0] auth-context: Login sucesso, setando user:", data.user)
       setUser(data.user)
       
       // Determinar redirect baseado no tipo de usuário
       const redirectTo = data.user?.isAdmin ? "/dashboard" : "/minha-conta"
-      console.log("[v0] auth-context: Redirect para:", redirectTo)
       return { success: true, redirectTo }
-    } catch (err) {
-      console.log("[v0] auth-context: Erro catch:", err)
+    } catch {
       return { success: false, error: "Erro ao fazer login" }
     }
   }
