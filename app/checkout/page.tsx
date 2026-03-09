@@ -13,8 +13,9 @@ import {
   Check,
   Tag,
   X,
-  QrCode
+  QrCode as QrCodeIcon
 } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 import { useStore } from "@/lib/store-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -427,7 +428,7 @@ export default function CheckoutPage() {
                 ? "border-primary bg-primary text-primary-foreground" 
                 : "border-border text-muted-foreground"
             }`}>
-              <QrCode className="w-5 h-5" />
+              <QrCodeIcon className="w-5 h-5" />
             </div>
             <span className="ml-2 text-sm font-medium text-foreground hidden sm:inline">PIX</span>
           </div>
@@ -682,10 +683,18 @@ export default function CheckoutPage() {
                 <div className="bg-card rounded-xl border border-border p-6 text-center">
                   {/* QR Code */}
                   <div className="w-64 h-64 mx-auto bg-white p-4 rounded-lg mb-6 flex items-center justify-center">
-                    {/* Usando QRCode estilizado como fallback */}
-                    <div className="w-full h-full bg-gradient-to-br from-foreground/5 to-foreground/10 rounded flex items-center justify-center">
-                      <QrCode className="w-32 h-32 text-foreground/40" />
-                    </div>
+                    {pixData.qrCode && pixData.qrCode.length > 50 ? (
+                      <QRCodeSVG 
+                        value={pixData.qrCode} 
+                        size={220}
+                        level="M"
+                        includeMargin={false}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-foreground/5 to-foreground/10 rounded flex items-center justify-center">
+                        <QrCodeIcon className="w-32 h-32 text-foreground/40" />
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-muted-foreground mb-4">

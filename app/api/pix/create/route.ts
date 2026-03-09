@@ -4,12 +4,21 @@ import { sendEmail } from "@/lib/email"
 
 // Tipos para a resposta da PenguimPay
 interface PenguimPayPixResponse {
-  id: string
-  qr_code: string
-  qr_code_base64?: string
-  qr_code_url?: string
-  pix_key?: string
-  status: string
+  success: boolean
+  data: {
+    transaction_id: string
+    external_id: string
+    amount: number
+    amount_net: number
+    amount_fee: number
+    status: string
+    qr_code: string
+    qr_code_base64: string | null
+    qr_code_image: string | null
+    expires_at: string
+    created_at: string
+    provider: string
+  }
 }
 
 export async function POST(request: Request) {
@@ -64,30 +73,32 @@ export async function POST(request: Request) {
 
     if (penguimPayKey) {
       try {
-        const pixResponse = await fetch("https://api.penguimpay.com/v1/transactions/pix-in", {
+        // Limpar CPF do telefone e formatar documento
+        const cleanPhone = customerPhone.replace(/\D/g, "")
+        
+        const pixResponse = await fetch("https://api.penguimpay.com/api/external/pix/deposit", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${penguimPayKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: Math.round(total * 100), // PenguimPay usa centavos
-            externalId: `OC_${Date.now()}`,
-            description: `Compra Ondina Closet - ${customerName}`,
-            customer: {
+            amount: total, // PenguimPay usa valor em reais (não centavos)
+            client: {
               name: customerName,
+              document: "000.000.000-00", // Documento genérico pois não coletamos CPF
               email: customerEmail,
-              phone: customerPhone.replace(/\D/g, ""),
             },
           }),
         })
 
-        if (pixResponse.ok) {
-          pixData = await pixResponse.json()
+        const responseData = await pixResponse.json()
+        
+        if (pixResponse.ok && responseData.success) {
+          pixData = responseData
         } else {
-          const errorData = await pixResponse.json().catch(() => ({}))
-          console.error("[v0] PenguimPay erro:", errorData)
-          pixError = errorData.message || "Erro ao gerar PIX"
+          console.error("[v0] PenguimPay erro:", responseData)
+          pixError = responseData.message || "Erro ao gerar PIX"
         }
       } catch (err) {
         console.error("[v0] Erro ao chamar PenguimPay:", err)
@@ -98,9 +109,10 @@ export async function POST(request: Request) {
     // Se a API falhou, usar PIX manual como fallback
     const manualPixKey = process.env.PIX_KEY || "pix@ondinacloset.store"
     
-    const qrCode = pixData?.qr_code || manualPixKey
-    const qrCodeImage = pixData?.qr_code_base64 || pixData?.qr_code_url || null
-    const transactionId = pixData?.id || `manual_${Date.now()}`
+    const qrCode = pixData?.data?.qr_code || manualPixKey
+    const qrCodeImage = pixData?.data?.qr_code_base64 || pixData?.data?.qr_code_image || null
+    const transactionId = pixData?.data?.transaction_id || `manual_${Date.now()}`
+    const expiresAt = pixData?.data?.expires_at || null
 
     // SEGUNDO: Somente após ter o QR code, criar o pedido no banco
     const orderNumber = `OC${Date.now().toString().slice(-8)}`
@@ -185,6 +197,7 @@ export async function POST(request: Request) {
         qrCodeImage: payment.qrCodeImage,
         pixKey: payment.pixKey,
         amount: payment.amount.toString(),
+        expiresAt: expiresAt,
       },
       ...(pixError && { warning: pixError }),
     })
