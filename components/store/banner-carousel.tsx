@@ -43,24 +43,9 @@ export function BannerCarousel() {
     setCurrentIndex(prev => (prev + 1) % activeBanners.length)
   }
 
-  // Se não há banners, mostrar o hero padrão
+  // Se não há banners, não mostrar nada - o HeroSection já cuida disso
   if (!activeBanners.length) {
-    return (
-      <section className="relative min-h-[60vh] flex items-center justify-center" style={{ backgroundColor: '#FDF2F4' }}>
-        <div className="text-center space-y-6 px-4">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-foreground leading-tight">
-            Elegância que
-            <span className="block font-medium italic text-primary"> brilha em você</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Descubra joias exclusivas criadas para mulheres que apreciam a sofisticação nos detalhes.
-          </p>
-          <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
-            <Link href="/produtos">Explorar Coleção</Link>
-          </Button>
-        </div>
-      </section>
-    )
+    return null
   }
 
   return (

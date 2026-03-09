@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/button'
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[85vh] flex items-center" style={{ backgroundColor: '#FDF2F4' }}>
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
-      </div>
+    <section className="relative min-h-[60vh] flex items-center bg-background">
       
       <div className="relative mx-auto max-w-7xl px-4 lg:px-8 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
