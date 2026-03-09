@@ -3,6 +3,7 @@
 import { useState, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { SlidersHorizontal, Grid3X3, LayoutGrid, ChevronDown } from 'lucide-react'
+import useSWR from 'swr'
 import { ProductCard } from '@/components/store/product-card'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,129 +13,26 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 
-const allProducts = [
-  {
-    id: '1',
-    name: 'Anel Serena Dourado',
-    price: 189.90,
-    comparePrice: 249.90,
-    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&q=80',
-    slug: 'anel-serena-dourado',
-    category: 'Anéis',
-    categorySlug: 'aneis'
-  },
-  {
-    id: '2',
-    name: 'Colar Pérolas Delicadas',
-    price: 299.90,
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&q=80',
-    slug: 'colar-perolas-delicadas',
-    category: 'Colares',
-    categorySlug: 'colares'
-  },
-  {
-    id: '3',
-    name: 'Brinco Gota Cristal',
-    price: 159.90,
-    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80',
-    slug: 'brinco-gota-cristal',
-    category: 'Brincos',
-    categorySlug: 'brincos'
-  },
-  {
-    id: '4',
-    name: 'Pulseira Elos Finos',
-    price: 219.90,
-    comparePrice: 279.90,
-    image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600&q=80',
-    slug: 'pulseira-elos-finos',
-    category: 'Pulseiras',
-    categorySlug: 'pulseiras'
-  },
-  {
-    id: '5',
-    name: 'Anel Solitário Elegance',
-    price: 349.90,
-    image: 'https://images.unsplash.com/photo-1603561596112-0a132b757442?w=600&q=80',
-    slug: 'anel-solitario-elegance',
-    category: 'Anéis',
-    categorySlug: 'aneis'
-  },
-  {
-    id: '6',
-    name: 'Brinco Argola Clássica',
-    price: 129.90,
-    image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=600&q=80',
-    slug: 'brinco-argola-classica',
-    category: 'Brincos',
-    categorySlug: 'brincos'
-  },
-  {
-    id: '7',
-    name: 'Colar Corrente Veneziana',
-    price: 259.90,
-    image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&q=80',
-    slug: 'colar-corrente-veneziana',
-    category: 'Colares',
-    categorySlug: 'colares'
-  },
-  {
-    id: '8',
-    name: 'Pulseira Riviera',
-    price: 399.90,
-    comparePrice: 499.90,
-    image: 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=600&q=80',
-    slug: 'pulseira-riviera',
-    category: 'Pulseiras',
-    categorySlug: 'pulseiras'
-  },
-  {
-    id: '9',
-    name: 'Anel Coração Brilhante',
-    price: 279.90,
-    image: 'https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?w=600&q=80',
-    slug: 'anel-coracao-brilhante',
-    category: 'Anéis',
-    categorySlug: 'aneis'
-  },
-  {
-    id: '10',
-    name: 'Brinco Estrela Cintilante',
-    price: 189.90,
-    image: 'https://images.unsplash.com/photo-1629224316810-9d8805b95e76?w=600&q=80',
-    slug: 'brinco-estrela-cintilante',
-    category: 'Brincos',
-    categorySlug: 'brincos'
-  },
-  {
-    id: '11',
-    name: 'Colar Pingente Lua',
-    price: 229.90,
-    comparePrice: 289.90,
-    image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=600&q=80',
-    slug: 'colar-pingente-lua',
-    category: 'Colares',
-    categorySlug: 'colares'
-  },
-  {
-    id: '12',
-    name: 'Pulseira Charm Delicada',
-    price: 169.90,
-    image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600&q=80',
-    slug: 'pulseira-charm-delicada',
-    category: 'Pulseiras',
-    categorySlug: 'pulseiras'
-  },
-]
+interface Product {
+  id: string
+  name: string
+  slug: string
+  price: number
+  comparePrice: number | null
+  image: string
+  category: string
+  categorySlug: string
+}
 
-const categories = [
-  { name: 'Todos', slug: '' },
-  { name: 'Anéis', slug: 'aneis' },
-  { name: 'Colares', slug: 'colares' },
-  { name: 'Brincos', slug: 'brincos' },
-  { name: 'Pulseiras', slug: 'pulseiras' },
-]
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 const sortOptions = [
   { name: 'Mais Recentes', value: 'newest' },
@@ -149,6 +47,29 @@ function ProductsContent() {
   const [selectedCategory, setSelectedCategory] = useState(categoryParam)
   const [sortBy, setSortBy] = useState('newest')
   const [gridCols, setGridCols] = useState<3 | 4>(4)
+
+  // Buscar produtos do banco
+  const { data: productsData, isLoading: loadingProducts } = useSWR<{ success: boolean; products: Product[] }>(
+    '/api/store/products',
+    fetcher
+  )
+
+  // Buscar categorias do banco
+  const { data: categoriesData, isLoading: loadingCategories } = useSWR<{ success: boolean; categories: Category[] }>(
+    '/api/store/categories',
+    fetcher
+  )
+
+  const allProducts = productsData?.products || []
+  const dbCategories = categoriesData?.categories || []
+
+  // Criar lista de categorias para filtro
+  const categories = useMemo(() => {
+    return [
+      { name: 'Todos', slug: '' },
+      ...dbCategories.map(c => ({ name: c.name, slug: c.slug }))
+    ]
+  }, [dbCategories])
 
   const filteredProducts = useMemo(() => {
     let products = [...allProducts]
@@ -170,14 +91,15 @@ function ProductsContent() {
         products.sort((a, b) => a.name.localeCompare(b.name))
         break
       default:
-        // newest - keep original order
+        // newest - keep original order (already sorted by createdAt desc from API)
         break
     }
     
     return products
-  }, [selectedCategory, sortBy])
+  }, [allProducts, selectedCategory, sortBy])
 
   const currentSort = sortOptions.find(s => s.value === sortBy)?.name || 'Mais Recentes'
+  const isLoading = loadingProducts || loadingCategories
 
   return (
     <div className="min-h-screen bg-background">
@@ -202,20 +124,26 @@ function ProductsContent() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
           {/* Category tabs */}
           <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <Button
-                key={cat.slug}
-                variant={selectedCategory === cat.slug ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategory(cat.slug)}
-                className={selectedCategory === cat.slug 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'border-border hover:bg-muted'
-                }
-              >
-                {cat.name}
-              </Button>
-            ))}
+            {loadingCategories ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-20" />
+              ))
+            ) : (
+              categories.map((cat) => (
+                <Button
+                  key={cat.slug}
+                  variant={selectedCategory === cat.slug ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedCategory(cat.slug)}
+                  className={selectedCategory === cat.slug 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'border-border hover:bg-muted'
+                  }
+                >
+                  {cat.name}
+                </Button>
+              ))
+            )}
           </div>
 
           {/* Sort & Grid options */}
@@ -263,27 +191,42 @@ function ProductsContent() {
 
         {/* Results count */}
         <p className="text-sm text-muted-foreground mb-6">
-          {filteredProducts.length} {filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados'}
+          {isLoading ? (
+            <Skeleton className="h-4 w-40 inline-block" />
+          ) : (
+            `${filteredProducts.length} ${filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`
+          )}
         </p>
 
         {/* Products grid */}
         <div className={`grid grid-cols-2 gap-4 lg:gap-6 ${
           gridCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'
         }`}>
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} {...product} />
-          ))}
+          {isLoading ? (
+            // Loading skeleton
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="aspect-square w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : (
+            filteredProducts.map((product) => (
+              <ProductCard key={product.id} {...product} />
+            ))
+          )}
         </div>
 
-        {filteredProducts.length === 0 && (
+        {!isLoading && filteredProducts.length === 0 && (
           <div className="text-center py-16">
             <p className="text-lg text-muted-foreground">
               Nenhum produto encontrado nesta categoria.
             </p>
           </div>
-)}
-  </div>
-  </div>
+        )}
+      </div>
+    </div>
   )
 }
 

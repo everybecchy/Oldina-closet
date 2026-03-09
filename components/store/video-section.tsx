@@ -26,7 +26,7 @@ function getYouTubeThumbnail(url: string) {
 }
 
 export function VideoSection() {
-  const { data: videos } = useSWR<Video[]>('/api/admin/videos', fetcher)
+  const { data: videos } = useSWR<Video[]>('/api/store/videos', fetcher)
   const [playingVideo, setPlayingVideo] = useState<string | null>(null)
   
   const activeVideos = videos?.filter(v => v.active) || []

@@ -1,79 +1,38 @@
+"use client"
+
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import useSWR from 'swr'
 import { ProductCard } from './product-card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 
-const featuredProducts = [
-  {
-    id: '1',
-    name: 'Anel Serena Dourado',
-    price: 189.90,
-    comparePrice: 249.90,
-    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&q=80',
-    slug: 'anel-serena-dourado',
-    category: 'Anéis'
-  },
-  {
-    id: '2',
-    name: 'Colar Pérolas Delicadas',
-    price: 299.90,
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&q=80',
-    slug: 'colar-perolas-delicadas',
-    category: 'Colares'
-  },
-  {
-    id: '3',
-    name: 'Brinco Gota Cristal',
-    price: 159.90,
-    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80',
-    slug: 'brinco-gota-cristal',
-    category: 'Brincos'
-  },
-  {
-    id: '4',
-    name: 'Pulseira Elos Finos',
-    price: 219.90,
-    comparePrice: 279.90,
-    image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600&q=80',
-    slug: 'pulseira-elos-finos',
-    category: 'Pulseiras'
-  },
-  {
-    id: '5',
-    name: 'Anel Solitário Elegance',
-    price: 349.90,
-    image: 'https://images.unsplash.com/photo-1603561596112-0a132b757442?w=600&q=80',
-    slug: 'anel-solitario-elegance',
-    category: 'Anéis'
-  },
-  {
-    id: '6',
-    name: 'Brinco Argola Clássica',
-    price: 129.90,
-    image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=600&q=80',
-    slug: 'brinco-argola-classica',
-    category: 'Brincos'
-  },
-  {
-    id: '7',
-    name: 'Colar Corrente Veneziana',
-    price: 259.90,
-    image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&q=80',
-    slug: 'colar-corrente-veneziana',
-    category: 'Colares'
-  },
-  {
-    id: '8',
-    name: 'Pulseira Riviera',
-    price: 399.90,
-    comparePrice: 499.90,
-    image: 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=600&q=80',
-    slug: 'pulseira-riviera',
-    category: 'Pulseiras'
-  },
-]
+interface Product {
+  id: string
+  name: string
+  slug: string
+  price: number
+  comparePrice: number | null
+  image: string
+  category: string
+  categorySlug: string
+}
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export function FeaturedSection() {
+  const { data, isLoading } = useSWR<{ success: boolean; products: Product[] }>(
+    '/api/store/products?featured=true',
+    fetcher
+  )
+
+  const featuredProducts = data?.products || []
+
+  // Se não há produtos em destaque e não está carregando, não mostrar a seção
+  if (!isLoading && featuredProducts.length === 0) {
+    return null
+  }
+
   return (
     <section className="py-20 bg-background">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -100,9 +59,20 @@ export function FeaturedSection() {
 
         {/* Products grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} {...product} />
-          ))}
+          {isLoading ? (
+            // Loading skeleton
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="aspect-square w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : (
+            featuredProducts.map((product) => (
+              <ProductCard key={product.id} {...product} />
+            ))
+          )}
         </div>
       </div>
     </section>
