@@ -221,6 +221,12 @@ export default function CheckoutPage() {
 
   // Criar PIX primeiro, depois salvar pedido
   const createPixPayment = async () => {
+    // Validar frete
+    if (!selectedFrete) {
+      alert("Por favor, selecione uma opção de entrega")
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -607,7 +613,7 @@ export default function CheckoutPage() {
                         </div>
                       ) : (
                         <RadioGroup
-                          value={selectedFrete?.service}
+                          value={selectedFrete?.service || ""}
                           onValueChange={(value) => {
                             const option = freteOptions.find((o) => o.service === value)
                             if (option) setSelectedFrete(option)
