@@ -283,43 +283,52 @@ export default function AdminOrdersPage() {
                 <h4 className="text-sm font-medium text-foreground">Informacoes de Envio</h4>
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p>
-                    <span className="font-medium text-foreground">Endereco:</span>{' '}
-                    {selectedOrder.address}
-                    {selectedOrder.number && `, ${selectedOrder.number}`}
-                    {selectedOrder.complement && ` - ${selectedOrder.complement}`}
+                    <span className="font-medium text-foreground">Rua:</span>{' '}
+                    {selectedOrder.address || 'Nao informado'}
                   </p>
+                  <p>
+                    <span className="font-medium text-foreground">Numero:</span>{' '}
+                    {selectedOrder.number || 'Nao informado'}
+                  </p>
+                  {selectedOrder.complement && (
+                    <p>
+                      <span className="font-medium text-foreground">Complemento:</span>{' '}
+                      {selectedOrder.complement}
+                    </p>
+                  )}
                   <p>
                     <span className="font-medium text-foreground">Bairro:</span>{' '}
                     {selectedOrder.neighborhood || 'Nao informado'}
                   </p>
                   <p>
                     <span className="font-medium text-foreground">Cidade/Estado:</span>{' '}
-                    {selectedOrder.city} - {selectedOrder.state}
+                    {selectedOrder.city || 'Nao informado'} - {selectedOrder.state || 'N/A'}
                   </p>
                   <p>
                     <span className="font-medium text-foreground">CEP:</span>{' '}
-                    {selectedOrder.zipCode}
+                    {selectedOrder.zipCode || 'Nao informado'}
                   </p>
-                  <p>
-                    <span className="font-medium text-foreground">Metodo de Envio:</span>{' '}
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      selectedOrder.shippingMethod === 'sedex' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : selectedOrder.shippingMethod === 'pac'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {selectedOrder.shippingMethod === 'sedex' 
-                        ? 'SEDEX' 
-                        : selectedOrder.shippingMethod === 'pac' 
-                        ? 'PAC' 
-                        : selectedOrder.shippingMethod || 'Nao informado'}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="font-medium text-foreground">Valor do Frete:</span>{' '}
-                    <span className="text-primary font-semibold">{formatPrice(Number(selectedOrder.shipping))}</span>
-                  </p>
+                  <div className="pt-2 border-t border-border mt-2">
+                    <p>
+                      <span className="font-medium text-foreground">Metodo de Envio:</span>{' '}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        selectedOrder.shippingMethod?.toLowerCase() === 'sedex' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : selectedOrder.shippingMethod?.toLowerCase() === 'pac'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedOrder.shippingMethod || 'Nao informado'}
+                      </span>
+                    </p>
+                    <p className="mt-1">
+                      <span className="font-medium text-foreground">Valor do Frete:</span>{' '}
+                      <span className="text-primary font-semibold">{formatPrice(Number(selectedOrder.shipping))}</span>
+                      {Number(selectedOrder.shipping) > 0 && (
+                        <span className="ml-2 text-green-600 text-xs">(Cobrado)</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
 

@@ -4,7 +4,26 @@ import { prisma } from "@/lib/prisma"
 export async function GET() {
   try {
     const orders = await prisma.order.findMany({
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        customerEmail: true,
+        customerPhone: true,
+        address: true,
+        number: true,
+        complement: true,
+        neighborhood: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        shippingMethod: true,
+        status: true,
+        subtotal: true,
+        shipping: true,
+        discount: true,
+        total: true,
+        createdAt: true,
         items: {
           include: {
             product: {
@@ -61,7 +80,26 @@ export async function PATCH(request: Request) {
     const order = await prisma.order.update({
       where: { id: orderId },
       data: { status },
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        customerEmail: true,
+        customerPhone: true,
+        address: true,
+        number: true,
+        complement: true,
+        neighborhood: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        shippingMethod: true,
+        status: true,
+        subtotal: true,
+        shipping: true,
+        discount: true,
+        total: true,
+        createdAt: true,
         items: {
           include: {
             product: {
