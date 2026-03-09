@@ -15,12 +15,9 @@ interface Category {
   productCount: number
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
-
 export function CategorySection() {
   const { data, isLoading } = useSWR<{ success: boolean; categories: Category[] }>(
-    '/api/store/categories',
-    fetcher
+    '/api/store/categories'
   )
 
   const categories = data?.categories || []

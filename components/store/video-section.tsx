@@ -13,8 +13,6 @@ interface Video {
   active: boolean
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
-
 function getYouTubeId(url: string) {
   const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/)
   return match ? match[1] : null
@@ -26,7 +24,7 @@ function getYouTubeThumbnail(url: string) {
 }
 
 export function VideoSection() {
-  const { data: videos } = useSWR<Video[]>('/api/store/videos', fetcher)
+  const { data: videos } = useSWR<Video[]>('/api/store/videos')
   const [playingVideo, setPlayingVideo] = useState<string | null>(null)
   
   const activeVideos = videos?.filter(v => v.active) || []

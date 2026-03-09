@@ -32,8 +32,6 @@ interface Category {
   slug: string
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
-
 const sortOptions = [
   { name: 'Mais Recentes', value: 'newest' },
   { name: 'Preço: Menor para Maior', value: 'price-asc' },
@@ -50,14 +48,12 @@ function ProductsContent() {
 
   // Buscar produtos do banco
   const { data: productsData, isLoading: loadingProducts } = useSWR<{ success: boolean; products: Product[] }>(
-    '/api/store/products',
-    fetcher
+    '/api/store/products'
   )
 
   // Buscar categorias do banco
   const { data: categoriesData, isLoading: loadingCategories } = useSWR<{ success: boolean; categories: Category[] }>(
-    '/api/store/categories',
-    fetcher
+    '/api/store/categories'
   )
 
   const allProducts = productsData?.products || []

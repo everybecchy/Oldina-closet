@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Montserrat } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/auth-context'
 import { StoreProvider } from '@/lib/store-context'
+import { SWRProvider } from '@/lib/swr-config'
 import './globals.css'
 
 const cormorant = Cormorant_Garamond({ 
@@ -42,11 +43,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="bg-background">
       <body className={`${cormorant.variable} ${montserrat.variable} font-sans antialiased`}>
-        <AuthProvider>
-          <StoreProvider>
-            {children}
-          </StoreProvider>
-        </AuthProvider>
+        <SWRProvider>
+          <AuthProvider>
+            <StoreProvider>
+              {children}
+            </StoreProvider>
+          </AuthProvider>
+        </SWRProvider>
         <Analytics />
       </body>
     </html>
