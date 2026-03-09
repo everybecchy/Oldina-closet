@@ -3,118 +3,103 @@
 import { use, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import useSWR from 'swr'
 import { ChevronLeft, Heart, Minus, Plus, ShoppingBag, Truck, Shield, RefreshCw } from 'lucide-react'
 import { useStore } from '@/lib/store-context'
 import { Button } from '@/components/ui/button'
 import { ProductCard } from '@/components/store/product-card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Spinner } from '@/components/ui/spinner'
 
-// Demo product data
-const products: Record<string, {
+interface Product {
   id: string
   name: string
+  slug: string
+  description: string | null
   price: number
-  comparePrice?: number
+  comparePrice: number | null
   images: string[]
-  description: string
-  details: string[]
+  image: string
   category: string
-}> = {
-  'anel-serena-dourado': {
-    id: '1',
-    name: 'Anel Serena Dourado',
-    price: 189.90,
-    comparePrice: 249.90,
-    images: [
-      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&q=80',
-      'https://images.unsplash.com/photo-1603561596112-0a132b757442?w=800&q=80',
-      'https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?w=800&q=80',
-    ],
-    description: 'O Anel Serena é uma peça delicada e sofisticada, perfeita para o dia a dia ou ocasiões especiais. Seu design elegante combina com qualquer estilo.',
-    details: ['Banho de ouro 18k', 'Pedra de zircônia', 'Ajustável', 'Antialérgico'],
-    category: 'Anéis'
-  },
-  'colar-perolas-delicadas': {
-    id: '2',
-    name: 'Colar Pérolas Delicadas',
-    price: 299.90,
-    images: [
-      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&q=80',
-      'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80',
-    ],
-    description: 'Um colar clássico com pérolas delicadas que adiciona um toque de elegância a qualquer look. Perfeito para noivas ou eventos formais.',
-    details: ['Pérolas de água doce', 'Fecho banhado a ouro', 'Comprimento: 45cm', 'Antialérgico'],
-    category: 'Colares'
-  },
-  'brinco-gota-cristal': {
-    id: '3',
-    name: 'Brinco Gota Cristal',
-    price: 159.90,
-    images: [
-      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&q=80',
-      'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=800&q=80',
-    ],
-    description: 'Brincos em formato de gota com cristais que capturam a luz de forma deslumbrante. Ideais para eventos especiais.',
-    details: ['Cristais austríacos', 'Base em prata 925', 'Fecho borboleta', 'Tamanho: 3cm'],
-    category: 'Brincos'
-  },
-  'pulseira-elos-finos': {
-    id: '4',
-    name: 'Pulseira Elos Finos',
-    price: 219.90,
-    comparePrice: 279.90,
-    images: [
-      'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=800&q=80',
-      'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=800&q=80',
-    ],
-    description: 'Uma pulseira delicada com elos finos que adiciona sofisticação ao seu pulso. Perfeita para usar sozinha ou combinada.',
-    details: ['Banho de ouro 18k', 'Comprimento: 18cm', 'Fecho lagosta', 'Antialérgico'],
-    category: 'Pulseiras'
-  },
+  categorySlug: string
+  stock: number
+  featured: boolean
 }
 
-const relatedProducts = [
-  {
-    id: '5',
-    name: 'Anel Solitário Elegance',
-    price: 349.90,
-    image: 'https://images.unsplash.com/photo-1603561596112-0a132b757442?w=600&q=80',
-    slug: 'anel-solitario-elegance',
-    category: 'Anéis'
-  },
-  {
-    id: '6',
-    name: 'Brinco Argola Clássica',
-    price: 129.90,
-    image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=600&q=80',
-    slug: 'brinco-argola-classica',
-    category: 'Brincos'
-  },
-  {
-    id: '7',
-    name: 'Colar Corrente Veneziana',
-    price: 259.90,
-    image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&q=80',
-    slug: 'colar-corrente-veneziana',
-    category: 'Colares'
-  },
-  {
-    id: '8',
-    name: 'Pulseira Riviera',
-    price: 399.90,
-    image: 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=600&q=80',
-    slug: 'pulseira-riviera',
-    category: 'Pulseiras'
-  },
-]
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const product = products[slug]
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isLiked, setIsLiked] = useState(false)
   const { addToCart } = useStore()
 
+  // Buscar produto do banco
+  const { data: productData, isLoading: loadingProduct } = useSWR<{ success: boolean; product: Product }>(
+    `/api/store/products?slug=${slug}`,
+    fetcher
+  )
+
+  // Buscar produtos relacionados (mesma categoria)
+  const { data: relatedData, isLoading: loadingRelated } = useSWR<{ success: boolean; products: Product[] }>(
+    productData?.product?.categorySlug 
+      ? `/api/store/products?category=${productData.product.categorySlug}` 
+      : null,
+    fetcher
+  )
+
+  const product = productData?.product
+  const relatedProducts = relatedData?.products?.filter(p => p.id !== product?.id).slice(0, 4) || []
+
+  const formatPrice = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
+
+  const handleAddToCart = () => {
+    if (!product) return
+    for (let i = 0; i < quantity; i++) {
+      addToCart({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images[0] || product.image
+      })
+    }
+  }
+
+  // Loading state
+  if (loadingProduct) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
+          <Skeleton className="h-6 w-40 mb-8" />
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+            <div className="space-y-4">
+              <Skeleton className="aspect-square w-full rounded-xl" />
+              <div className="flex gap-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="w-20 h-20 rounded-lg" />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-10 w-3/4" />
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Product not found
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,23 +113,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     )
   }
 
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
-
-  const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addToCart({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.images[0]
-      })
-    }
-  }
+  const productImages = product.images.length > 0 ? product.images : [product.image]
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,7 +134,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
           <div className="space-y-4">
             <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
               <Image
-                src={product.images[selectedImage]}
+                src={productImages[selectedImage]}
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -183,9 +152,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
               </Button>
             </div>
             
-            {product.images.length > 1 && (
+            {productImages.length > 1 && (
               <div className="flex gap-3">
-                {product.images.map((img, idx) => (
+                {productImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
@@ -225,24 +194,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
               )}
             </div>
 
-            <p className="text-muted-foreground leading-relaxed">
-              {product.description}
-            </p>
+            {product.description && (
+              <p className="text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
+            )}
 
-            {/* Details */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide" style={{ fontFamily: 'var(--font-montserrat)' }}>
-                Detalhes
-              </h3>
-              <ul className="space-y-1">
-                {product.details.map((detail, idx) => (
-                  <li key={idx} className="text-sm text-muted-foreground flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary" />
-                    {detail}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Stock info */}
+            {product.stock > 0 ? (
+              <p className="text-sm text-green-600">
+                Em estoque ({product.stock} disponíveis)
+              </p>
+            ) : (
+              <p className="text-sm text-red-600">
+                Produto esgotado
+              </p>
+            )}
 
             {/* Quantity & Add to cart */}
             <div className="space-y-4 pt-4 border-t border-border">
@@ -254,6 +221,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                     size="icon"
                     className="h-10 w-10"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={product.stock === 0}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -262,7 +230,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                     variant="outline"
                     size="icon"
                     className="h-10 w-10"
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    disabled={product.stock === 0 || quantity >= product.stock}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -272,9 +241,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
               <Button 
                 onClick={handleAddToCart}
                 className="w-full h-14 text-base bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={product.stock === 0}
               >
                 <ShoppingBag className="h-5 w-5 mr-2" />
-                Adicionar à Sacola
+                {product.stock === 0 ? 'Produto Esgotado' : 'Adicionar à Sacola'}
               </Button>
             </div>
 
@@ -300,16 +270,28 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         </div>
 
         {/* Related products */}
-        <section className="mt-20">
-          <h2 className="text-2xl font-light text-foreground mb-8">
-            Você também pode <span className="font-medium italic">gostar</span>
-          </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            {relatedProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-          </div>
-        </section>
+        {relatedProducts.length > 0 && (
+          <section className="mt-20">
+            <h2 className="text-2xl font-light text-foreground mb-8">
+              Você também pode <span className="font-medium italic">gostar</span>
+            </h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {loadingRelated ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="aspect-square w-full rounded-xl" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ))
+              ) : (
+                relatedProducts.map((relatedProduct) => (
+                  <ProductCard key={relatedProduct.id} {...relatedProduct} />
+                ))
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   )
