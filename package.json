@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint ."
   },
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@prisma/adapter-pg": "^7.4.2",
