@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface Video {
   id: string
@@ -182,17 +183,12 @@ export default function VideosPage() {
                   placeholder="https://www.youtube.com/watch?v=..."
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="thumbnail">URL da Thumbnail</Label>
-                <Input
-                  id="thumbnail"
-                  value={formData.thumbnail}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, thumbnail: e.target.value }))
-                  }
-                  placeholder="https://..."
-                />
-              </div>
+              <ImageUpload
+                label="Thumbnail (capa do video)"
+                value={formData.thumbnail}
+                onChange={(val) => setFormData((prev) => ({ ...prev, thumbnail: val }))}
+                aspectRatio="thumbnail"
+              />
               <div className="flex items-center justify-between">
                 <Label htmlFor="active">Ativo</Label>
                 <Switch

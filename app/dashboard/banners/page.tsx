@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface Banner {
   id: string
@@ -169,17 +170,12 @@ export default function BannersPage() {
                   placeholder="Ex: Descubra as joias mais elegantes"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="image">URL da Imagem</Label>
-                <Input
-                  id="image"
-                  value={formData.image}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, image: e.target.value }))
-                  }
-                  placeholder="https://..."
-                />
-              </div>
+              <ImageUpload
+                label="Imagem do Banner"
+                value={formData.image}
+                onChange={(val) => setFormData((prev) => ({ ...prev, image: val }))}
+                aspectRatio="banner"
+              />
               <div className="space-y-2">
                 <Label htmlFor="link">Link (opcional)</Label>
                 <Input

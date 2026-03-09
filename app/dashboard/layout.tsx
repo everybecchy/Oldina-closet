@@ -67,7 +67,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ fontFamily: 'var(--font-montserrat), system-ui, sans-serif' }}>
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
