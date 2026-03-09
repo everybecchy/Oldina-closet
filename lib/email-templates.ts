@@ -232,4 +232,163 @@ export const emailTemplates = {
   </body>
 </html>
   `,
+
+  paymentPix: (data: { orderNumber: string; amount: string; qrCode: string; pixKey: string; items: Array<{name: string; quantity: number; price: string}> }) => `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body { font-family: 'Cormorant Garamond', Georgia, serif; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f5f0; }
+      .header { text-align: center; padding: 30px 0; border-bottom: 1px solid #e0d4c8; }
+      .logo { height: 80px; margin-bottom: 20px; }
+      .content { background-color: #ffffff; padding: 40px; margin: 20px 0; }
+      .section { margin-bottom: 30px; }
+      .section-title { font-size: 18px; color: #8b7355; font-weight: 600; margin-bottom: 15px; }
+      .pix-code { background-color: #f9f5f0; padding: 15px; border-radius: 4px; word-break: break-all; font-size: 12px; font-family: monospace; margin: 10px 0; }
+      .qr-container { text-align: center; background-color: #f9f5f0; padding: 20px; border-radius: 4px; margin: 20px 0; }
+      .qr-code { max-width: 300px; margin: 0 auto; }
+      .item-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+      .total-row { display: flex; justify-content: space-between; padding: 15px 0; border-top: 2px solid #e0d4c8; font-weight: 600; color: #8b7355; }
+      .warning { background-color: #fef3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; font-size: 14px; }
+      .footer { text-align: center; padding: 20px; font-size: 12px; color: #999; border-top: 1px solid #e0d4c8; }
+      .button { display: inline-block; background-color: #9b8b6d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-size: 14px; margin-top: 15px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Melhoria%20de%20logo%20joias%20Mar%209%202026-ha7CbnbZUj0zu4PFpWOJxAVosSqWnD.png" alt="Ondina Closet" class="logo">
+        <h1 style="font-size: 32px; margin: 0; color: #8b7355; font-weight: 300;">Ondina Closet</h1>
+      </div>
+
+      <div class="content">
+        <div class="section">
+          <h2 style="color: #8b7355; margin-top: 0;">Seu PIX está pronto!</h2>
+          <p>Olá! O seu pedido <strong>#${data.orderNumber}</strong> está aguardando confirmação de pagamento via PIX.</p>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📦 Itens do Pedido</div>
+          ${data.items.map(item => `
+            <div class="item-row">
+              <span>${item.name} x${item.quantity}</span>
+              <span>R$ ${item.price}</span>
+            </div>
+          `).join('')}
+          <div class="total-row">
+            <span>Total:</span>
+            <span>R$ ${data.amount}</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">💳 Formas de Pagar com PIX</div>
+          
+          <div class="qr-container">
+            <p style="margin: 0 0 15px 0; font-size: 14px;">Escaneie este QR Code com seu app bancário:</p>
+            <div style="background-color: white; padding: 10px; border-radius: 4px; display: inline-block;">
+              <img src="${data.qrCode}" alt="QR Code PIX" style="width: 250px; height: 250px;">
+            </div>
+          </div>
+
+          <div style="background-color: #f9f5f0; padding: 15px; border-radius: 4px; margin: 15px 0;">
+            <p style="margin: 0; font-size: 12px; color: #666;">Ou copie a chave PIX:</p>
+            <div class="pix-code">${data.pixKey}</div>
+          </div>
+        </div>
+
+        <div class="warning">
+          <strong>⏱️ Importante:</strong> O código PIX expira em 30 minutos. Se não conseguir pagar, gere um novo código.
+        </div>
+
+        <div class="section">
+          <p style="margin: 0; font-size: 14px; color: #666;">
+            Assim que confirmarmos seu pagamento, você receberá um email com a confirmação de seu pedido.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>© 2026 Ondina Closet. Todos os direitos reservados.</p>
+        <p>Joias finas para momentos especiais</p>
+        <p style="margin-top: 10px;">Dúvidas? Envie para: contato@ondinacloset.store</p>
+      </div>
+    </div>
+  </body>
+</html>
+  `,
+
+  paymentStatus: (data: { orderNumber: string; status: string; amount: string; items: Array<{name: string; quantity: number; price: string}> }) => `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body { font-family: 'Cormorant Garamond', Georgia, serif; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f5f0; }
+      .header { text-align: center; padding: 30px 0; border-bottom: 1px solid #e0d4c8; }
+      .logo { height: 80px; margin-bottom: 20px; }
+      .content { background-color: #ffffff; padding: 40px; margin: 20px 0; }
+      .status-badge { display: inline-block; padding: 10px 20px; border-radius: 20px; font-weight: 600; margin: 20px 0; }
+      .status-approved { background-color: #d4edda; color: #155724; }
+      .status-pending { background-color: #fff3cd; color: #856404; }
+      .status-failed { background-color: #f8d7da; color: #721c24; }
+      .section-title { font-size: 18px; color: #8b7355; font-weight: 600; margin-bottom: 15px; margin-top: 25px; }
+      .item-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+      .total-row { display: flex; justify-content: space-between; padding: 15px 0; border-top: 2px solid #e0d4c8; font-weight: 600; color: #8b7355; }
+      .footer { text-align: center; padding: 20px; font-size: 12px; color: #999; border-top: 1px solid #e0d4c8; }
+      .button { display: inline-block; background-color: #9b8b6d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-size: 14px; margin-top: 15px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Melhoria%20de%20logo%20joias%20Mar%209%202026-ha7CbnbZUj0zu4PFpWOJxAVosSqWnD.png" alt="Ondina Closet" class="logo">
+        <h1 style="font-size: 32px; margin: 0; color: #8b7355; font-weight: 300;">Ondina Closet</h1>
+      </div>
+
+      <div class="content">
+        <h2 style="text-align: center; color: #8b7355; margin-top: 0;">Atualização de Pagamento</h2>
+        
+        <div style="text-align: center;">
+          <div class="status-badge ${data.status.includes('confirmado') || data.status.includes('Confirmado') ? 'status-approved' : data.status.includes('Pagamento') && data.status.includes('confirmado') ? 'status-approved' : 'status-pending'}">
+            ${data.status}
+          </div>
+        </div>
+
+        <p style="text-align: center; margin-bottom: 30px;">Pedido <strong>#${data.orderNumber}</strong></p>
+
+        <div class="section-title">📦 Itens do Pedido</div>
+        ${data.items.map(item => `
+          <div class="item-row">
+            <span>${item.name} x${item.quantity}</span>
+            <span>R$ ${item.price}</span>
+          </div>
+        `).join('')}
+        <div class="total-row">
+          <span>Total:</span>
+          <span>R$ ${data.amount}</span>
+        </div>
+
+        <div style="margin-top: 30px; padding: 15px; background-color: #f9f5f0; border-radius: 4px;">
+          <p style="margin: 0; color: #666; font-size: 14px;">
+            Você pode acompanhar seu pedido a qualquer momento em sua conta na loja.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>© 2026 Ondina Closet. Todos os direitos reservados.</p>
+        <p>Joias finas para momentos especiais</p>
+        <p style="margin-top: 10px;">Dúvidas? Envie para: contato@ondinacloset.store</p>
+      </div>
+    </div>
+  </body>
+</html>
+  `,
 }
+

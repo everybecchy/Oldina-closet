@@ -1,63 +1,91 @@
 import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { getSessionUser } from "@/lib/auth"
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const transactionId = searchParams.get("transactionId")
-
-  if (!transactionId) {
-    return NextResponse.json(
-      { error: "ID da transacao e obrigatorio" },
-      { status: 400 }
-    )
-  }
-
-  // Verifica se a API key está configurada
-  const apiKey = process.env.PENGUIN_PAY_API_KEY
-
-  // Modo demo - simula verificação de pagamento
-  if (!apiKey || transactionId.startsWith("demo_")) {
-    // Simula um pagamento confirmado após alguns segundos (para demonstração)
-    // Em produção, isso seria verificado via webhook ou polling real
-    return NextResponse.json({
-      transactionId,
-      status: "pending", // Em demo, sempre retorna pending
-      paidAt: null,
-    })
-  }
-
   try {
-    // Integração real com Penguin Pay
-    const response = await fetch(
-      `https://api.penguimpay.com/v1/pix/${transactionId}`,
+    const user = await getSessionUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: "Não autenticado" },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const transactionId = searchParams.get("transactionId")
+
+    if (!transactionId) {
+      return NextResponse.json(
+        { error: "Transaction ID é obrigatório" },
+        { status: 400 }
+      )
+    }
+
+    // Buscar pagamento
+    const payment = await prisma.payment.findUnique({
+      where: { transactionId },
+      include: { order: true },
+    })
+
+    if (!payment) {
+      return NextResponse.json(
+        { error: "Pagamento não encontrado" },
+        { status: 404 }
+      )
+    }
+
+    // Verificar se o usuário tem permissão
+    if (payment.order.userId !== user.id && !user.isAdmin) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 403 }
+      )
+    }
+
+    // Consultar status na PenguimPay
+    const statusResponse = await fetch(
+      `https://api.penguimpay.com/api/external/pix/deposit/${transactionId}`,
       {
-        method: "GET",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          "Authorization": `Bearer ${process.env.PENGUIM_PAY_PUBLIC_KEY}`,
         },
       }
     )
 
-    if (!response.ok) {
+    if (!statusResponse.ok) {
+      console.error("[v0] Erro ao consultar PIX:", statusResponse.status)
+      
+      // Retornar status local se a API falhar
       return NextResponse.json({
-        transactionId,
-        status: "pending",
-        paidAt: null,
+        success: true,
+        status: payment.status,
+        amount: payment.amount.toString(),
+        transactionId: payment.transactionId,
       })
     }
 
-    const data = await response.json()
+    const statusData = await statusResponse.json()
+
+    // Atualizar status no banco se mudou
+    if (statusData.status !== payment.status) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: statusData.status },
+      })
+    }
 
     return NextResponse.json({
-      transactionId: data.id,
-      status: data.status === "paid" ? "paid" : "pending",
-      paidAt: data.paid_at || null,
+      success: true,
+      status: statusData.status,
+      amount: statusData.amount || payment.amount.toString(),
+      transactionId: statusData.id,
     })
   } catch (error) {
-    console.error("Erro ao verificar status PIX:", error)
-    return NextResponse.json({
-      transactionId,
-      status: "pending",
-      paidAt: null,
-    })
+    console.error("[v0] Erro ao consultar status PIX:", error)
+    return NextResponse.json(
+      { error: "Erro ao consultar status" },
+      { status: 500 }
+    )
   }
 }
