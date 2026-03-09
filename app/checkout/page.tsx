@@ -342,12 +342,6 @@ export default function CheckoutPage() {
     createPixPayment()
   }
 
-  // Simular pagamento confirmado (para demo)
-  const simulatePayment = () => {
-    clearCart()
-    setStep("success")
-  }
-
   if (cart.length === 0 && step !== "success") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -738,19 +732,9 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  <p className="text-xl font-semibold text-primary mb-4">
+                  <p className="text-xl font-semibold text-primary">
                     Total: {formatPrice(total)}
                   </p>
-
-                  {/* Botão de simular pagamento (para demo) */}
-                  <Button
-                    type="button"
-                    onClick={simulatePayment}
-                    className="w-full h-12 bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Simular Pagamento Confirmado (Demo)
-                  </Button>
                 </div>
 
                 <Button type="button" variant="outline" onClick={() => setStep("shipping")} className="w-full h-12">
