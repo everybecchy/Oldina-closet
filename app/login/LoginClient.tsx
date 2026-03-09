@@ -29,11 +29,7 @@ export default function LoginClient() {
     setIsLoading(true)
     setError("")
 
-    console.log("[v0] Tentando login com:", formData.email)
-
     const result = await login(formData.email, formData.password)
-
-    console.log("[v0] Resultado do login:", result)
 
     if (!result.success) {
       setError(result.error || "Erro ao fazer login")
@@ -43,9 +39,6 @@ export default function LoginClient() {
 
     // Redirecionar após login bem sucedido
     const destination = redirectTo || result.redirectTo || "/minha-conta"
-    console.log("[v0] Redirecionando para:", destination)
-    
-    // Usar window.location para garantir navegação completa
     window.location.href = destination
   }
 
