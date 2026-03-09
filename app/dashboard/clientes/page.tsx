@@ -1,68 +1,25 @@
 "use client"
 
 import { useState } from 'react'
-import { Search, Mail, Phone } from 'lucide-react'
+import useSWR from 'swr'
+import { Search, Mail, Phone, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-const customers = [
-  {
-    id: '1',
-    name: 'Maria Silva',
-    email: 'maria.silva@email.com',
-    phone: '(11) 99999-1234',
-    orders: 5,
-    totalSpent: 1549.50,
-    lastOrder: '09/03/2026',
-  },
-  {
-    id: '2',
-    name: 'Ana Santos',
-    email: 'ana.santos@email.com',
-    phone: '(11) 99999-5678',
-    orders: 3,
-    totalSpent: 869.70,
-    lastOrder: '09/03/2026',
-  },
-  {
-    id: '3',
-    name: 'Julia Costa',
-    email: 'julia.costa@email.com',
-    phone: '(11) 99999-9012',
-    orders: 8,
-    totalSpent: 2847.20,
-    lastOrder: '08/03/2026',
-  },
-  {
-    id: '4',
-    name: 'Carla Oliveira',
-    email: 'carla.oliveira@email.com',
-    phone: '(11) 99999-3456',
-    orders: 2,
-    totalSpent: 439.80,
-    lastOrder: '08/03/2026',
-  },
-  {
-    id: '5',
-    name: 'Beatriz Lima',
-    email: 'beatriz.lima@email.com',
-    phone: '(11) 99999-7890',
-    orders: 12,
-    totalSpent: 4789.80,
-    lastOrder: '07/03/2026',
-  },
-  {
-    id: '6',
-    name: 'Fernanda Rocha',
-    email: 'fernanda.rocha@email.com',
-    phone: '(11) 99999-2345',
-    orders: 1,
-    totalSpent: 159.90,
-    lastOrder: '07/03/2026',
-  },
-]
+interface Customer {
+  id: string
+  name: string
+  email: string
+  phone: string | null
+  orders: number
+  totalSpent: number
+  lastOrder: string
+}
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function AdminCustomersPage() {
+  const { data: customers, error, isLoading } = useSWR<Customer[]>('/api/admin/customers', fetcher)
   const [searchQuery, setSearchQuery] = useState('')
 
   const formatPrice = (value: number) => {
@@ -72,10 +29,30 @@ export default function AdminCustomersPage() {
     }).format(value)
   }
 
-  const filteredCustomers = customers.filter(c => 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR')
+  }
+
+  const filteredCustomers = customers?.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  ) || []
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Erro ao carregar clientes</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +62,7 @@ export default function AdminCustomersPage() {
           Gerenciar <span className="font-medium italic">Clientes</span>
         </h2>
         <p className="text-muted-foreground mt-1">
-          {customers.length} clientes cadastrados
+          {customers?.length || 0} clientes cadastrados
         </p>
       </div>
 
@@ -106,59 +83,67 @@ export default function AdminCustomersPage() {
           <CardTitle className="text-lg font-medium">Lista de Clientes</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Cliente</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Contato</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Pedidos</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Total Gasto</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Último Pedido</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="border-b border-border last:border-0 hover:bg-muted/50">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-semibold text-primary">
-                            {customer.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground text-sm">{customer.name}</p>
-                          <p className="text-xs text-muted-foreground md:hidden">{customer.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 hidden md:table-cell">
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {customer.email}
-                        </p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {customer.phone}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell">
-                      {customer.orders} pedidos
-                    </td>
-                    <td className="py-3 px-4 text-sm font-medium text-primary">
-                      {formatPrice(customer.totalSpent)}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell">
-                      {customer.lastOrder}
-                    </td>
+          {filteredCustomers.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Nenhum cliente encontrado</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Cliente</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Contato</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Pedidos</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Total Gasto</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Último Pedido</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredCustomers.map((customer) => (
+                    <tr key={customer.id} className="border-b border-border last:border-0 hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-sm font-semibold text-primary">
+                              {customer.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground text-sm">{customer.name}</p>
+                            <p className="text-xs text-muted-foreground md:hidden">{customer.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 hidden md:table-cell">
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {customer.email}
+                          </p>
+                          {customer.phone && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {customer.phone}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell">
+                        {customer.orders} pedido{customer.orders !== 1 ? 's' : ''}
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-primary">
+                        {formatPrice(customer.totalSpent)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell">
+                        {formatDate(customer.lastOrder)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

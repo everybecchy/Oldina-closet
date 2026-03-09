@@ -88,9 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
+    // Logout otimista - limpa o estado imediatamente
+    setUser(null)
+    // Redirect para home imediatamente
+    window.location.href = "/"
+    // Chama a API em background
     try {
       await fetch("/api/auth/logout", { method: "POST" })
-      setUser(null)
     } catch {
       console.error("Erro ao fazer logout")
     }
