@@ -12,6 +12,8 @@ interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
+  loading: boolean
+  isAuthenticated: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; redirectTo?: string; error?: string }>
   register: (data: { name: string; email: string; phone?: string; password: string }) => Promise<{ success: boolean; redirectTo?: string; error?: string }>
   logout: () => Promise<void>
@@ -25,13 +27,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   const refreshSession = useCallback(async () => {
+    console.log("[v0] auth-context: refreshSession chamado")
     try {
       const response = await fetch("/api/auth/session")
+      console.log("[v0] auth-context: session response status:", response.status)
       const data = await response.json()
-      setUser(data.user)
-    } catch {
+      console.log("[v0] auth-context: session data:", data)
+      setUser(data.user || null)
+      console.log("[v0] auth-context: user setado para:", data.user || null)
+    } catch (err) {
+      console.log("[v0] auth-context: erro no refreshSession:", err)
       setUser(null)
     } finally {
+      console.log("[v0] auth-context: finalizando isLoading")
       setIsLoading(false)
     }
   }, [])
@@ -103,8 +111,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const isAuthenticated = !!user
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshSession }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      loading: isLoading, 
+      isAuthenticated, 
+      login, 
+      register, 
+      logout, 
+      refreshSession 
+    }}>
       {children}
     </AuthContext.Provider>
   )
