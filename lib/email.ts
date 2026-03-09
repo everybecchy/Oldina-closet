@@ -15,8 +15,8 @@ export interface EmailOptions {
   to: string
   name?: string
   subject: string
-  templateType: 'verify' | 'resetPassword' | 'resetSuccess' | 'newsletter'
-  data?: Record<string, string>
+  templateType: 'verify' | 'resetPassword' | 'resetSuccess' | 'newsletter' | 'payment-pix' | 'payment-status'
+  data?: Record<string, any>
 }
 
 export async function sendEmail(options: EmailOptions) {
@@ -46,6 +46,23 @@ export async function sendEmail(options: EmailOptions) {
       case 'newsletter':
         html = emailTemplates.newsletter({
           name: data.name || 'Cliente',
+        })
+        break
+      case 'payment-pix':
+        html = emailTemplates.paymentPix({
+          orderNumber: data.orderNumber || '',
+          amount: data.amount || '0',
+          qrCode: data.qrCode || '',
+          pixKey: data.pixKey || '',
+          items: data.items || [],
+        })
+        break
+      case 'payment-status':
+        html = emailTemplates.paymentStatus({
+          orderNumber: data.orderNumber || '',
+          status: data.status || '',
+          amount: data.amount || '0',
+          items: data.items || [],
         })
         break
     }

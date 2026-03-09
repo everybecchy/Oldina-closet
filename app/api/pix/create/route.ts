@@ -1,98 +1,127 @@
 import { NextResponse } from "next/server"
-
-interface PenguinPayRequest {
-  amount: number
-  description: string
-  external_reference: string
-}
-
-interface PenguinPayResponse {
-  id: string
-  qr_code: string
-  qr_code_base64?: string
-  status: string
-  amount: number
-  external_reference: string
-}
+import { prisma } from "@/lib/prisma"
+import { getSessionUser } from "@/lib/auth"
+import { sendEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   try {
-    const { amount, orderId, customerName } = await request.json()
-
-    if (!amount || !orderId) {
+    const user = await getSessionUser()
+    if (!user) {
       return NextResponse.json(
-        { error: "Valor e ID do pedido sao obrigatorios" },
+        { error: "Não autenticado" },
+        { status: 401 }
+      )
+    }
+
+    const { orderId } = await request.json()
+
+    if (!orderId) {
+      return NextResponse.json(
+        { error: "Order ID é obrigatório" },
         { status: 400 }
       )
     }
 
-    // Verifica se a API key está configurada
-    const apiKey = process.env.PENGUIN_PAY_API_KEY
-
-    if (!apiKey) {
-      // Modo demo - retorna QR code simulado
-      const mockQrCode = `00020126580014br.gov.bcb.pix0136${Date.now()}5204000053039865406${amount.toFixed(2)}5802BR5913Ondina Closet6008Salvador62070503***6304`
-      
-      return NextResponse.json({
-        success: true,
-        transactionId: `demo_${Date.now()}`,
-        qrCode: mockQrCode,
-        qrCodeImage: null,
-        amount,
-        status: "pending",
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
-      })
-    }
-
-    // Integração real com Penguin Pay
-    const payload: PenguinPayRequest = {
-      amount: Math.round(amount * 100), // Converte para centavos
-      description: `Pedido ${orderId} - ${customerName || "Cliente"}`,
-      external_reference: orderId,
-    }
-
-    const response = await fetch("https://api.penguimpay.com/v1/pix/qrcode", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
+    // Buscar pedido
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error("Erro Penguin Pay:", errorData)
-      
-      // Fallback para modo demo em caso de erro
-      const mockQrCode = `00020126580014br.gov.bcb.pix0136${Date.now()}5204000053039865406${amount.toFixed(2)}5802BR5913Ondina Closet6008Salvador62070503***6304`
-      
-      return NextResponse.json({
-        success: true,
-        transactionId: `demo_${Date.now()}`,
-        qrCode: mockQrCode,
-        qrCodeImage: null,
-        amount,
-        status: "pending",
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      })
+    if (!order) {
+      return NextResponse.json(
+        { error: "Pedido não encontrado" },
+        { status: 404 }
+      )
     }
 
-    const data: PenguinPayResponse = await response.json()
+    if (order.userId !== user.id && !user.isAdmin) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 403 }
+      )
+    }
+
+    // Criar PIX na PenguimPay
+    const pixResponse = await fetch("https://api.penguimpay.com/api/external/pix/deposit", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.PENGUIM_PAY_PUBLIC_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: Number(order.total),
+        description: `Pedido ${order.orderNumber} - Ondina Closet`,
+        orderId: order.id,
+        customerEmail: order.customerEmail,
+        customerName: order.customerName,
+      }),
+    })
+
+    if (!pixResponse.ok) {
+      const error = await pixResponse.json().catch(() => ({}))
+      console.error("[v0] Erro PenguimPay:", error)
+      return NextResponse.json(
+        { error: "Erro ao gerar PIX" },
+        { status: 400 }
+      )
+    }
+
+    const pixData = await pixResponse.json()
+
+    // Salvar transação no banco
+    const payment = await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        transactionId: pixData.id,
+        qrCode: pixData.qr_code,
+        qrCodeImage: pixData.qr_code_base64 || pixData.qr_code_url,
+        pixKey: pixData.pix_key || "",
+        amount: order.total,
+        status: "PENDING",
+      },
+    })
+
+    // Enviar email de confirmação com PIX
+    if (order.customerEmail) {
+      try {
+        await sendEmail({
+          to: order.customerEmail,
+          name: order.customerName,
+          subject: "Seu PIX para pagamento - Ondina Closet",
+          templateType: "payment-pix",
+          data: {
+            orderNumber: order.orderNumber,
+            amount: order.total.toString(),
+            qrCode: pixData.qr_code,
+            pixKey: pixData.pix_key || "",
+            items: order.items.map((item: any) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price.toString(),
+            })),
+          },
+        })
+      } catch (emailError) {
+        console.error("[v0] Erro ao enviar email de PIX:", emailError)
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      transactionId: data.id,
-      qrCode: data.qr_code,
-      qrCodeImage: data.qr_code_base64 || null,
-      amount: data.amount / 100,
-      status: data.status,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      payment: {
+        id: payment.id,
+        qrCode: payment.qrCode,
+        qrCodeImage: payment.qrCodeImage,
+        pixKey: payment.pixKey,
+        amount: payment.amount.toString(),
+        transactionId: payment.transactionId,
+      },
     })
   } catch (error) {
-    console.error("Erro ao criar PIX:", error)
+    console.error("[v0] Erro ao criar PIX:", error)
     return NextResponse.json(
-      { error: "Erro ao gerar QR code PIX" },
+      { error: "Erro interno do servidor" },
       { status: 500 }
     )
   }
