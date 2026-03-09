@@ -163,8 +163,23 @@ export async function POST(request: Request) {
       },
     })
 
+    // Buscar os items com os nomes dos produtos
+    const orderWithProducts = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        items: {
+          include: { product: true },
+        },
+      },
+    })
+
+    // Gerar URL do QR code usando API externa
+    const qrCodeImageUrl = qrCode.length > 50 
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrCode)}`
+      : null
+
     // Enviar email de confirmação com PIX (não bloqueia a resposta)
-    if (customerEmail) {
+    if (customerEmail && orderWithProducts) {
       sendEmail({
         to: customerEmail,
         name: customerName,
@@ -173,12 +188,12 @@ export async function POST(request: Request) {
         data: {
           orderNumber,
           amount: total.toFixed(2),
-          qrCode,
-          pixKey: pixData?.pix_key || manualPixKey,
-          items: order.items.map((item) => ({
-            name: item.name,
+          qrCode: qrCodeImageUrl || "",
+          pixKey: qrCode,
+          items: orderWithProducts.items.map((item) => ({
+            name: item.product?.name || "Produto",
             quantity: item.quantity,
-            price: item.price.toString(),
+            price: Number(item.price).toFixed(2),
           })),
         },
       }).catch((err) => console.error("[v0] Erro ao enviar email:", err))
