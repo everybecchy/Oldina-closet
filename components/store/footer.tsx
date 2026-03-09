@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Instagram, Facebook, Mail, MapPin, Phone } from 'lucide-react'
+import { Instagram, Mail, MapPin, Phone } from 'lucide-react'
 
 export function Footer() {
   return (
@@ -20,11 +20,8 @@ export function Footer() {
               Joias elegantes e sofisticadas para mulheres que apreciam a beleza nos detalhes.
             </p>
             <div className="flex gap-4 mt-6">
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link href="https://www.instagram.com/ondinacloset?igsh=a2duajJ6aXV0M2lz" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                 <Instagram className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Facebook className="h-5 w-5" />
               </Link>
             </div>
           </div>
@@ -69,11 +66,11 @@ export function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4" />
-                contato@ondinacloset.com
+                contato@ondinacloset.store
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4" />
-                (11) 99999-9999
+                +55 13 99640-1256
               </li>
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5" />

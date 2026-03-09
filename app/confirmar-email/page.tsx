@@ -1,3 +1,4 @@
+"use client"
 import { Suspense } from "react"
 
 export const metadata = {
@@ -23,8 +24,6 @@ function LoadingPage() {
     </div>
   )
 }
-
-"use client"
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
