@@ -9,6 +9,7 @@ import { CategorySection } from '@/components/store/category-section'
 import { FeaturedSection } from '@/components/store/featured-section'
 import { VideoSection } from '@/components/store/video-section'
 import { NewsletterSection } from '@/components/store/newsletter-section'
+import { WhatsAppButton } from '@/components/store/whatsapp-button'
 
 export default function HomePage() {
   return (
@@ -24,6 +25,7 @@ export default function HomePage() {
       </main>
       <Footer />
       <CartDrawer />
+      <WhatsAppButton />
     </div>
   )
 }

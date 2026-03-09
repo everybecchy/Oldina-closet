@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react"
 
 export default function CadastroPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -58,7 +60,12 @@ export default function CadastroPage() {
         throw new Error(data.error || "Erro ao criar conta")
       }
 
-      router.push(data.redirectTo)
+      // Se tem redirect customizado, usa ele
+      if (redirectTo) {
+        router.push(redirectTo)
+      } else {
+        router.push(data.redirectTo)
+      }
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar conta")
@@ -191,7 +198,7 @@ export default function CadastroPage() {
           <CardFooter className="flex flex-col gap-4">
             <div className="text-center text-sm text-muted-foreground">
               Ja tem uma conta?{" "}
-              <Link href="/login" className="text-primary hover:underline font-medium">
+              <Link href={redirectTo ? `/login?redirect=${redirectTo}` : "/login"} className="text-primary hover:underline font-medium">
                 Fazer login
               </Link>
             </div>

@@ -2,12 +2,16 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { X, Minus, Plus, ShoppingBag } from 'lucide-react'
 import { useStore } from '@/lib/store-context'
+import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 
 export function CartDrawer() {
+  const router = useRouter()
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, cartTotal } = useStore()
+  const { isAuthenticated } = useAuth()
 
   if (!isCartOpen) return null
 
@@ -105,10 +109,18 @@ export function CartDrawer() {
               <span className="text-xl font-semibold text-foreground">{formatPrice(cartTotal)}</span>
             </div>
             <p className="text-xs text-muted-foreground">Frete calculado no checkout</p>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base" asChild>
-              <Link href="/checkout" onClick={() => setIsCartOpen(false)}>
-                Finalizar Compra
-              </Link>
+            <Button 
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base"
+              onClick={() => {
+                setIsCartOpen(false)
+                if (isAuthenticated) {
+                  router.push('/checkout')
+                } else {
+                  router.push('/login?redirect=/checkout')
+                }
+              }}
+            >
+              Finalizar Compra
             </Button>
             <Button 
               variant="outline" 
