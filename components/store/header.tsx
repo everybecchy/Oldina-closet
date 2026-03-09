@@ -50,9 +50,9 @@ export function Header() {
             <Image
               src="/images/logo-ondina.png"
               alt="Ondina Closet"
-              width={280}
-              height={105}
-              className="h-24 w-auto"
+              width={400}
+              height={150}
+              className="h-32 md:h-36 w-auto"
               priority
             />
           </Link>
