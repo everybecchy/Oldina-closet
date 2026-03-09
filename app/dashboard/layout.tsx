@@ -15,7 +15,8 @@ import {
   ImageIcon,
   Video,
   Ticket,
-  Percent
+  Percent,
+  Sparkles
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Categorias", href: "/dashboard/categorias", icon: Tags },
   { name: "Clientes", href: "/dashboard/clientes", icon: Users },
   { name: "Banners", href: "/dashboard/banners", icon: ImageIcon },
+  { name: "Secao Hero", href: "/dashboard/hero", icon: Sparkles },
   { name: "Videos", href: "/dashboard/videos", icon: Video },
   { name: "Cupons", href: "/dashboard/cupons", icon: Ticket },
   { name: "Promocoes", href: "/dashboard/promocoes", icon: Percent },
