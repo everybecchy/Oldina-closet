@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const category = searchParams.get("category")
     const featured = searchParams.get("featured")
     const slug = searchParams.get("slug")
+    const limit = searchParams.get("limit")
 
     // Se buscar por slug específico (página de detalhes)
     if (slug) {
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
         category: true,
       },
       orderBy: { createdAt: "desc" },
+      ...(limit ? { take: parseInt(limit, 10) } : {}),
     })
 
     return NextResponse.json({

@@ -7,6 +7,7 @@ import { BannerCarousel } from '@/components/store/banner-carousel'
 import { HeroSection } from '@/components/store/hero-section'
 import { CategorySection } from '@/components/store/category-section'
 import { FeaturedSection } from '@/components/store/featured-section'
+import { RecentProductsSection } from '@/components/store/recent-products-section'
 import { VideoSection } from '@/components/store/video-section'
 import { NewsletterSection } from '@/components/store/newsletter-section'
 import { WhatsAppButton } from '@/components/store/whatsapp-button'
@@ -19,6 +20,7 @@ export default function HomePage() {
         <BannerCarousel />
         <HeroSection />
         <CategorySection />
+        <RecentProductsSection />
         <FeaturedSection />
         <VideoSection />
         <NewsletterSection />
