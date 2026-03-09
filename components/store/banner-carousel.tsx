@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import useSWR from 'swr'
 
@@ -20,7 +20,7 @@ interface Banner {
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export function BannerCarousel() {
-  const { data: banners } = useSWR<Banner[]>('/api/store/banners', fetcher)
+  const { data: banners, isLoading } = useSWR<Banner[]>('/api/store/banners', fetcher)
   const [currentIndex, setCurrentIndex] = useState(0)
   
   const activeBanners = banners?.filter(b => b.active) || []
@@ -43,9 +43,46 @@ export function BannerCarousel() {
     setCurrentIndex(prev => (prev + 1) % activeBanners.length)
   }
 
-  // Se não há banners, não mostrar nada - o HeroSection já cuida disso
+  // Mostrar loading enquanto carrega os banners
+  if (isLoading) {
+    return (
+      <section className="relative w-full h-[50vh] md:h-[60vh] lg:h-[70vh] bg-muted flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </section>
+    )
+  }
+
+  // Se nao ha banners, mostrar hero fallback
   if (!activeBanners.length) {
-    return null
+    return (
+      <section className="relative w-full h-[50vh] md:h-[60vh] lg:h-[70vh] overflow-hidden bg-muted">
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&q=80"
+            alt="Ondina Closet"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-foreground/60 via-foreground/30 to-transparent" />
+        </div>
+        <div className="relative h-full flex items-center">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8 w-full">
+            <div className="max-w-xl space-y-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-white leading-tight text-balance">
+                Elegancia que brilha em voce
+              </h2>
+              <p className="text-lg md:text-xl text-white/90">
+                Descubra joias exclusivas criadas para mulheres que apreciam a sofisticacao nos detalhes.
+              </p>
+              <Button asChild size="lg" className="mt-4 bg-primary hover:bg-primary/90">
+                <Link href="/produtos">Explorar Colecao</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (
