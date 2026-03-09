@@ -30,8 +30,8 @@ export function Header() {
   const { user, isAuthenticated, logout } = useAuth()
 
   return (
-    <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
+    <header className="sticky top-0 z-50 bg-white shadow-sm">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
         {/* Mobile menu button */}
         <div className="flex lg:hidden">
           <Button
@@ -46,14 +46,15 @@ export function Header() {
 
         {/* Logo */}
         <div className="flex lg:flex-1 justify-center lg:justify-start">
-          <Link href="/" className="-m-1.5 p-1.5">
+          <Link href="/" className="block">
             <Image
               src="/images/logo-ondina.png"
               alt="Ondina Closet"
-              width={400}
-              height={150}
-              className="h-32 md:h-36 w-auto"
+              width={320}
+              height={120}
+              className="h-20 md:h-24 lg:h-28 w-auto drop-shadow-sm"
               priority
+              style={{ filter: 'contrast(1.1) brightness(0.95)' }}
             />
           </Link>
         </div>
@@ -73,15 +74,15 @@ export function Header() {
         </div>
 
         {/* Right side icons */}
-        <div className="flex flex-1 justify-end gap-2">
-          <Button variant="ghost" size="icon" className="hidden lg:flex">
-            <Search className="h-5 w-5 text-foreground/70" />
+        <div className="flex flex-1 justify-end gap-1 md:gap-2">
+          <Button variant="ghost" size="icon" className="hidden lg:flex hover:bg-primary/10">
+            <Search className="h-5 w-5 text-foreground" />
           </Button>
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="hidden lg:flex">
-                  <User className="h-5 w-5 text-foreground/70" />
+                <Button variant="ghost" size="icon" className="hidden lg:flex hover:bg-primary/10">
+                  <User className="h-5 w-5 text-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -106,9 +107,9 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="ghost" size="icon" asChild className="hidden lg:flex">
+            <Button variant="ghost" size="icon" asChild className="hidden lg:flex hover:bg-primary/10">
               <Link href="/login">
-                <User className="h-5 w-5 text-foreground/70" />
+                <User className="h-5 w-5 text-foreground" />
               </Link>
             </Button>
           )}
@@ -116,9 +117,9 @@ export function Header() {
             variant="ghost"
             size="icon"
             onClick={() => setIsCartOpen(true)}
-            className="relative"
+            className="relative hover:bg-primary/10"
           >
-            <ShoppingBag className="h-5 w-5 text-foreground/70" />
+            <ShoppingBag className="h-5 w-5 text-foreground" />
             {cartCount > 0 && (
               <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center">
                 {cartCount}
