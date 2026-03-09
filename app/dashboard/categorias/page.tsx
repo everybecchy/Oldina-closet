@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, MoreHorizontal, Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { Plus, Pencil, Trash2, MoreHorizontal, Loader2, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 interface Category {
   id: string
@@ -40,6 +42,7 @@ export default function AdminCategoriesPage() {
     name: '',
     slug: '',
     description: '',
+    image: '',
   })
 
   // Buscar categorias do banco
@@ -69,6 +72,7 @@ export default function AdminCategoriesPage() {
         name: category.name,
         slug: category.slug,
         description: category.description || '',
+        image: category.image || '',
       })
     } else {
       setEditingCategory(null)
@@ -76,6 +80,7 @@ export default function AdminCategoriesPage() {
         name: '',
         slug: '',
         description: '',
+        image: '',
       })
     }
     setIsDialogOpen(true)
@@ -105,6 +110,7 @@ export default function AdminCategoriesPage() {
         id: editingCategory?.id,
         name: formData.name,
         description: formData.description || null,
+        image: formData.image || null,
       }
 
       const response = await fetch('/api/admin/categories', {
@@ -183,20 +189,20 @@ export default function AdminCategoriesPage() {
               Nova Categoria
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-5 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name">Nome *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Ex: Anéis"
+                  placeholder="Ex: Aneis"
                 />
               </div>
               <div className="space-y-2">
@@ -212,15 +218,29 @@ export default function AdminCategoriesPage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description">Descricao</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Descrição da categoria..."
+                  placeholder="Descricao da categoria..."
                   rows={3}
                 />
               </div>
+              
+              <div className="space-y-2">
+                <Label>Imagem de Capa</Label>
+                <p className="text-xs text-muted-foreground">
+                  Adicione uma foto para representar esta categoria na loja
+                </p>
+                <ImageUpload
+                  label=""
+                  value={formData.image}
+                  onChange={(val) => setFormData(prev => ({ ...prev, image: val }))}
+                  aspectRatio="thumbnail"
+                />
+              </div>
+              
               <Button 
                 onClick={handleSave} 
                 className="w-full bg-primary hover:bg-primary/90"
@@ -232,7 +252,7 @@ export default function AdminCategoriesPage() {
                     Salvando...
                   </>
                 ) : (
-                  editingCategory ? 'Salvar Alterações' : 'Criar Categoria'
+                  editingCategory ? 'Salvar Alteracoes' : 'Criar Categoria'
                 )}
               </Button>
             </div>
@@ -243,7 +263,22 @@ export default function AdminCategoriesPage() {
       {/* Categories grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map((category) => (
-          <Card key={category.id}>
+          <Card key={category.id} className="overflow-hidden">
+            {/* Cover image */}
+            <div className="relative h-32 bg-muted">
+              {category.image ? (
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
+                </div>
+              )}
+            </div>
             <CardHeader className="flex flex-row items-start justify-between pb-2">
               <CardTitle className="text-lg font-medium">{category.name}</CardTitle>
               <DropdownMenu>
