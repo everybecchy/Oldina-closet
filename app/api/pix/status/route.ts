@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     // Consultar status na PenguimPay
     try {
       const statusResponse = await fetch(
-        `https://api.penguimpay.com/v1/transactions/${transactionId}`,
+        `https://api.penguimpay.com/api/external/pix/deposit/${transactionId}`,
         {
           headers: {
             "Authorization": `Bearer ${process.env.PENGUIM_PAY_PUBLIC_KEY}`,
@@ -59,11 +59,14 @@ export async function GET(request: Request) {
 
       if (statusResponse.ok) {
         const statusData = await statusResponse.json()
+        const pixStatus = statusData.data?.status || statusData.status
 
         // Mapear status da API para nosso formato
-        const newStatus = statusData.status === "paid" ? "PAID" : 
-                          statusData.status === "cancelled" ? "CANCELLED" : 
-                          statusData.status === "failed" ? "FAILED" : "PENDING"
+        // PenguimPay retorna: waiting, PENDING, APPROVED, EXPIRED, FAILED, REFUNDED
+        const newStatus = pixStatus === "APPROVED" ? "PAID" : 
+                          pixStatus === "EXPIRED" ? "EXPIRED" : 
+                          pixStatus === "FAILED" ? "FAILED" : 
+                          pixStatus === "REFUNDED" ? "REFUNDED" : "PENDING"
 
         // Atualizar status no banco se mudou
         if (newStatus !== payment.status) {
@@ -86,9 +89,9 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
           success: true,
-          status: statusData.status || payment.status.toLowerCase(),
-          amount: statusData.amount || payment.amount.toString(),
-          transactionId: statusData.id || payment.transactionId,
+          status: newStatus === "PAID" ? "paid" : newStatus.toLowerCase(),
+          amount: statusData.data?.amount || payment.amount.toString(),
+          transactionId: statusData.data?.transaction_id || payment.transactionId,
         })
       }
     } catch (apiError) {
