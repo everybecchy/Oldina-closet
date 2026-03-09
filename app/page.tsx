@@ -19,8 +19,8 @@ export default function HomePage() {
       <main className="flex-1">
         <BannerCarousel />
         <HeroSection />
-        <CategorySection />
         <RecentProductsSection />
+        <CategorySection />
         <FeaturedSection />
         <VideoSection />
         <NewsletterSection />
