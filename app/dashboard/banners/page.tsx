@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, GripVertical } from "lucide-react"
+import { Plus, Pencil, Trash2, MoreHorizontal, GripVertical, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,38 +26,19 @@ import { ImageUpload } from "@/components/ui/image-upload"
 interface Banner {
   id: string
   title: string
-  subtitle: string
+  subtitle: string | null
   image: string
-  link: string
+  link: string | null
   active: boolean
   order: number
 }
 
-const initialBanners: Banner[] = [
-  {
-    id: "1",
-    title: "Nova Colecao",
-    subtitle: "Descubra as joias mais elegantes",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80",
-    link: "/produtos",
-    active: true,
-    order: 1,
-  },
-  {
-    id: "2",
-    title: "Promocao de Verao",
-    subtitle: "Ate 30% de desconto",
-    image: "https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=800&q=80",
-    link: "/promocoes",
-    active: true,
-    order: 2,
-  },
-]
-
 export default function BannersPage() {
-  const [banners, setBanners] = useState<Banner[]>(initialBanners)
+  const [banners, setBanners] = useState<Banner[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
@@ -66,14 +47,34 @@ export default function BannersPage() {
     active: true,
   })
 
+  // Buscar banners do banco
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch('/api/admin/banners')
+        const data = await response.json()
+        
+        if (Array.isArray(data)) {
+          setBanners(data)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar banners:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchBanners()
+  }, [])
+
   const handleOpenDialog = (banner?: Banner) => {
     if (banner) {
       setEditingBanner(banner)
       setFormData({
         title: banner.title,
-        subtitle: banner.subtitle,
+        subtitle: banner.subtitle || "",
         image: banner.image,
-        link: banner.link,
+        link: banner.link || "",
         active: banner.active,
       })
     } else {
@@ -89,33 +90,97 @@ export default function BannersPage() {
     setIsDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingBanner) {
-      setBanners((prev) =>
-        prev.map((b) =>
-          b.id === editingBanner.id
-            ? { ...b, ...formData }
-            : b
-        )
-      )
-    } else {
-      const newBanner: Banner = {
-        id: Date.now().toString(),
-        ...formData,
-        order: banners.length + 1,
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const payload = {
+        id: editingBanner?.id,
+        title: formData.title,
+        subtitle: formData.subtitle || null,
+        image: formData.image,
+        link: formData.link || null,
+        active: formData.active,
+        order: editingBanner?.order || banners.length + 1,
       }
-      setBanners((prev) => [...prev, newBanner])
+
+      const response = await fetch('/api/admin/banners', {
+        method: editingBanner ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        if (editingBanner) {
+          setBanners((prev) =>
+            prev.map((b) => b.id === editingBanner.id ? data : b)
+          )
+        } else {
+          setBanners((prev) => [...prev, data])
+        }
+        setIsDialogOpen(false)
+      } else {
+        alert(data.error || 'Erro ao salvar banner')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar:', error)
+      alert('Erro ao salvar banner')
+    } finally {
+      setIsSaving(false)
     }
-    setIsDialogOpen(false)
   }
 
-  const handleDelete = (id: string) => {
-    setBanners((prev) => prev.filter((b) => b.id !== id))
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este banner?')) return
+    
+    try {
+      const response = await fetch(`/api/admin/banners?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success || response.ok) {
+        setBanners((prev) => prev.filter((b) => b.id !== id))
+      } else {
+        alert(data.error || 'Erro ao excluir banner')
+      }
+    } catch (error) {
+      console.error('Erro ao excluir:', error)
+      alert('Erro ao excluir banner')
+    }
   }
 
-  const toggleActive = (id: string) => {
-    setBanners((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, active: !b.active } : b))
+  const toggleActive = async (id: string) => {
+    const banner = banners.find(b => b.id === id)
+    if (!banner) return
+
+    try {
+      const response = await fetch('/api/admin/banners', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...banner,
+          active: !banner.active,
+        }),
+      })
+
+      if (response.ok) {
+        setBanners((prev) =>
+          prev.map((b) => (b.id === id ? { ...b, active: !b.active } : b))
+        )
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     )
   }
 
@@ -200,8 +265,16 @@ export default function BannersPage() {
               <Button
                 onClick={handleSave}
                 className="w-full bg-primary hover:bg-primary/90"
+                disabled={isSaving}
               >
-                {editingBanner ? "Salvar Alteracoes" : "Criar Banner"}
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingBanner ? "Salvar Alteracoes" : "Criar Banner"
+                )}
               </Button>
             </div>
           </DialogContent>
