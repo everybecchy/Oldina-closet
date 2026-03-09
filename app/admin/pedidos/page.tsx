@@ -282,11 +282,19 @@ export default function AdminOrdersPage() {
                 <h4 className="text-sm font-medium text-foreground">Informações de Entrega</h4>
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p>
-                    <span className="font-medium text-foreground">Endereço:</span>{' '}
-                    {selectedOrder.address}
-                    {selectedOrder.number && `, ${selectedOrder.number}`}
-                    {selectedOrder.complement && ` - ${selectedOrder.complement}`}
+                    <span className="font-medium text-foreground">Rua:</span>{' '}
+                    {selectedOrder.address || '-'}
                   </p>
+                  <p>
+                    <span className="font-medium text-foreground">Número:</span>{' '}
+                    {selectedOrder.number || '-'}
+                  </p>
+                  {selectedOrder.complement && (
+                    <p>
+                      <span className="font-medium text-foreground">Complemento:</span>{' '}
+                      {selectedOrder.complement}
+                    </p>
+                  )}
                   <p>
                     <span className="font-medium text-foreground">Bairro:</span>{' '}
                     {selectedOrder.neighborhood || '-'}
@@ -299,14 +307,12 @@ export default function AdminOrdersPage() {
                     <span className="font-medium text-foreground">CEP:</span>{' '}
                     {selectedOrder.zipCode}
                   </p>
-                  {selectedOrder.shippingMethod && (
-                    <p>
-                      <span className="font-medium text-foreground">Método de Envio:</span>{' '}
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {selectedOrder.shippingMethod}
-                      </span>
-                    </p>
-                  )}
+                  <p>
+                    <span className="font-medium text-foreground">Método de Envio:</span>{' '}
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {selectedOrder.shippingMethod || 'Não informado'}
+                    </span>
+                  </p>
                   <p>
                     <span className="font-medium text-foreground">Valor do Frete:</span>{' '}
                     <span className={Number(selectedOrder.shipping) === 0 ? 'text-green-600' : ''}>
