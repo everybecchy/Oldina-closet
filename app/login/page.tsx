@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -38,7 +40,12 @@ export default function LoginPage() {
         throw new Error(data.error || "Erro ao fazer login")
       }
 
-      router.push(data.redirectTo)
+      // Se tem redirect customizado e não é admin, usa ele
+      if (redirectTo && !data.user?.isAdmin) {
+        router.push(redirectTo)
+      } else {
+        router.push(data.redirectTo)
+      }
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login")
@@ -133,7 +140,7 @@ export default function LoginPage() {
           <CardFooter className="flex flex-col gap-4">
             <div className="text-center text-sm text-muted-foreground">
               Ainda nao tem uma conta?{" "}
-              <Link href="/cadastro" className="text-primary hover:underline font-medium">
+              <Link href={redirectTo ? `/cadastro?redirect=${redirectTo}` : "/cadastro"} className="text-primary hover:underline font-medium">
                 Criar conta
               </Link>
             </div>
