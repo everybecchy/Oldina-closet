@@ -55,7 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(data.user)
-      return { success: true, redirectTo: data.redirectTo }
+      
+      // Determinar redirect baseado no tipo de usuário
+      const redirectTo = data.user?.isAdmin ? "/dashboard" : "/minha-conta"
+      return { success: true, redirectTo }
     } catch {
       return { success: false, error: "Erro ao fazer login" }
     }
