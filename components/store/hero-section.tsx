@@ -81,24 +81,6 @@ export function HeroSection() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent" />
             </div>
-            
-            {/* Floating card */}
-            <div className="absolute -bottom-6 -left-6 bg-card p-4 rounded-xl shadow-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted overflow-hidden relative">
-                  <Image
-                    src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=100&q=80"
-                    alt="Anel"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Anel Serenity</p>
-                  <p className="text-xs text-primary font-semibold">R$ 189,90</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
