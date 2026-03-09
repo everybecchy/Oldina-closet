@@ -183,15 +183,15 @@ export default function AdminCategoriesPage() {
               Nova Categoria
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name">Nome da Categoria *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -199,6 +199,7 @@ export default function AdminCategoriesPage() {
                   placeholder="Ex: Aneis"
                 />
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="description">Descricao</Label>
                 <Textarea
@@ -209,12 +210,20 @@ export default function AdminCategoriesPage() {
                   rows={3}
                 />
               </div>
-              <ImageUpload
-                label="Foto de Capa"
-                value={formData.image}
-                onChange={(val) => setFormData(prev => ({ ...prev, image: val }))}
-                aspectRatio="thumbnail"
-              />
+              
+              <div className="space-y-2">
+                <Label>Imagem de Capa</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Adicione uma foto para representar esta categoria na loja
+                </p>
+                <ImageUpload
+                  label=""
+                  value={formData.image}
+                  onChange={(val) => setFormData(prev => ({ ...prev, image: val }))}
+                  aspectRatio="thumbnail"
+                />
+              </div>
+              
               <Button 
                 onClick={handleSave} 
                 className="w-full bg-primary hover:bg-primary/90"
