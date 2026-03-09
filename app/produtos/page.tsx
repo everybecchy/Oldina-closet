@@ -199,24 +199,20 @@ function ProductsContent() {
         </p>
 
         {/* Products grid */}
-        <div className={`grid grid-cols-2 gap-4 lg:gap-6 ${
-          gridCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'
-        }`}>
-          {isLoading ? (
-            // Loading skeleton
-            Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-square w-full rounded-xl" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ))
-          ) : (
-            filteredProducts.map((product) => (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Spinner className="h-10 w-10 text-primary" />
+            <p className="text-muted-foreground text-sm">Carregando produtos...</p>
+          </div>
+        ) : (
+          <div className={`grid grid-cols-2 gap-4 lg:gap-6 ${
+            gridCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'
+          }`}>
+            {filteredProducts.map((product) => (
               <ProductCard key={product.id} {...product} />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {!isLoading && filteredProducts.length === 0 && (
           <div className="text-center py-16">
