@@ -60,14 +60,19 @@ export async function GET(request: Request) {
 
       if (statusResponse.ok) {
         const statusData = await statusResponse.json()
-        const pixStatus = statusData.data?.status || statusData.status
+        const pixStatus = (statusData.data?.status || statusData.status || "").toUpperCase()
+        
+        console.log("[v0] PenguimPay status response:", JSON.stringify(statusData))
+        console.log("[v0] pixStatus normalized:", pixStatus)
 
         // Mapear status da API para nosso formato
-        // PenguimPay retorna: waiting, PENDING, APPROVED, EXPIRED, FAILED, REFUNDED
-        const newStatus = pixStatus === "APPROVED" ? "PAID" : 
+        // PenguimPay retorna: waiting, PENDING, APPROVED, PAID, EXPIRED, FAILED, REFUNDED
+        const newStatus = (pixStatus === "APPROVED" || pixStatus === "PAID") ? "PAID" : 
                           pixStatus === "EXPIRED" ? "EXPIRED" : 
                           pixStatus === "FAILED" ? "FAILED" : 
                           pixStatus === "REFUNDED" ? "REFUNDED" : "PENDING"
+        
+        console.log("[v0] Mapped newStatus:", newStatus, "Current payment.status:", payment.status)
 
         // Atualizar status no banco se mudou
         if (newStatus !== payment.status) {

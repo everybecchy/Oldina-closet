@@ -304,13 +304,16 @@ export default function CheckoutPage() {
     try {
       const response = await fetch(`/api/pix/status?transactionId=${pixData.transactionId}`)
       const data = await response.json()
+      
+      console.log("[v0] Payment status check:", data)
 
-      if (data.status === "paid") {
+      // Aceitar "paid" ou "approved" como pagamento confirmado
+      if (data.status === "paid" || data.status === "approved") {
         clearCart()
         setStep("success")
       }
-    } catch {
-      // Ignora erros de verificação
+    } catch (error) {
+      console.log("[v0] Error checking payment:", error)
     } finally {
       setCheckingPayment(false)
     }
