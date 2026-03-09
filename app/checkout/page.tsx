@@ -164,9 +164,8 @@ export default function CheckoutPage() {
 
       if (data.options) {
         setFreteOptions(data.options)
-        // Seleciona a primeira opção com frete
-        const firstPaidOption = data.options.find((o: FreteOption) => o.price > 0)
-        setSelectedFrete(firstPaidOption || data.options[0])
+        // Não seleciona automaticamente - deixa o usuário escolher
+        setSelectedFrete(null)
       }
     } catch {
       // Usa opções padrão em caso de erro
@@ -220,39 +219,67 @@ export default function CheckoutPage() {
   const discount = appliedCoupon?.discount || 0
   const total = cartTotal + shippingCost - discount
 
-  // Criar pagamento PIX
+  // Criar PIX primeiro, depois salvar pedido
   const createPixPayment = async () => {
+    // Validar frete
+    if (!selectedFrete) {
+      alert("Por favor, selecione uma opção de entrega")
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      const newOrderNumber = `OC${Date.now().toString().slice(-6)}`
-      setOrderNumber(newOrderNumber)
-
+      // API unificada: gera o PIX e só salva o pedido se der sucesso
       const response = await fetch("/api/pix/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: total,
-          orderId: newOrderNumber,
+          // Dados do cliente
           customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.phone,
+          // Endereço
+          address: formData.address,
+          number: formData.number,
+          complement: formData.complement,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.cep,
+          // Itens e valores
+          items: cart.map((item) => ({
+            productId: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            image: item.image,
+          })),
+          subtotal: cartTotal,
+          shipping: shippingCost,
+          discount: discount,
+          couponCode: appliedCoupon?.code || null,
+          shippingMethod: selectedFrete?.serviceName || "PAC",
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error)
+        throw new Error(data.error || "Erro ao gerar PIX")
       }
 
+      setOrderNumber(data.order.orderNumber)
       setPixData({
-        qrCode: data.qrCode,
-        transactionId: data.transactionId,
-        expiresAt: data.expiresAt,
+        qrCode: data.payment.qrCode,
+        transactionId: data.payment.transactionId,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       })
 
       setStep("payment")
     } catch (error) {
       console.error("Erro ao criar PIX:", error)
+      alert(error instanceof Error ? error.message : "Erro ao processar pedido")
     } finally {
       setIsLoading(false)
     }
@@ -586,7 +613,7 @@ export default function CheckoutPage() {
                         </div>
                       ) : (
                         <RadioGroup
-                          value={selectedFrete?.service}
+                          value={selectedFrete?.service || ""}
                           onValueChange={(value) => {
                             const option = freteOptions.find((o) => o.service === value)
                             if (option) setSelectedFrete(option)
