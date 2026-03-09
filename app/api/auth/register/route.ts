@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { hashPassword, createSession } from "@/lib/auth"
+import { hashPassword } from "@/lib/auth"
+import { sendEmail } from "@/lib/email"
+import crypto from "crypto"
 
 export async function POST(request: Request) {
   try {
@@ -32,6 +34,7 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await hashPassword(password)
+    const verificationToken = crypto.randomBytes(32).toString("hex")
 
     const user = await prisma.user.create({
       data: {
@@ -40,23 +43,31 @@ export async function POST(request: Request) {
         name: name || null,
         phone: phone || null,
         isAdmin: false,
+        verificationToken,
+        emailVerified: null,
       },
     })
 
-    await createSession(user.id)
+    // Enviar email de confirmação
+    const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/confirmar-email?token=${verificationToken}`
+    await sendEmail({
+      to: user.email,
+      name: user.name || user.email,
+      subject: "Confirme seu email - Ondina Closet",
+      templateType: "verify",
+      data: {
+        name: user.name || "Cliente",
+        verificationLink,
+      },
+    })
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: user.isAdmin,
-      },
-      redirectTo: "/minha-conta",
+      message: "Verifique seu email para confirmar seu cadastro",
+      redirectTo: "/login",
     })
   } catch (error) {
-    console.error("Erro no registro:", error)
+    console.error("[v0] Erro no registro:", error)
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
