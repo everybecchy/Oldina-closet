@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import useSWR from "swr"
 import { useAuth } from "@/lib/auth-context"
-import { useCart } from "@/lib/cart-context"
+import { useStore } from "@/lib/store-context"
 import { Header } from "@/components/store/header"
 import { Footer } from "@/components/store/footer"
 import { CartDrawer } from "@/components/store/cart-drawer"
@@ -36,7 +36,7 @@ interface Favorite {
 export default function FavoritosPage() {
   const router = useRouter()
   const { isAuthenticated, loading: authLoading } = useAuth()
-  const { addToCart } = useCart()
+  const { addToCart } = useStore()
   
   const { data, error, isLoading, mutate } = useSWR<{ favorites: Favorite[] }>(
     isAuthenticated ? "/api/favorites" : null,

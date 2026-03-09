@@ -15,7 +15,15 @@ export async function GET() {
             }
           }
         },
-        payment: true,
+        payment: {
+          select: {
+            id: true,
+            status: true,
+            transactionId: true,
+            amount: true,
+            paidAt: true,
+          }
+        },
         user: {
           select: {
             name: true,
@@ -64,7 +72,15 @@ export async function PATCH(request: Request) {
             }
           }
         },
-        payment: true,
+        payment: {
+          select: {
+            id: true,
+            status: true,
+            transactionId: true,
+            amount: true,
+            paidAt: true,
+          }
+        },
       }
     })
 

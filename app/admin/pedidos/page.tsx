@@ -36,10 +36,13 @@ interface Order {
   customerEmail: string
   customerPhone: string | null
   address: string
+  number: string | null
+  complement: string | null
   neighborhood: string | null
   city: string
   state: string
   zipCode: string
+  shippingMethod: string | null
   status: string
   subtotal: number
   shipping: number
@@ -49,6 +52,7 @@ interface Order {
   payment: {
     status: string
     transactionId: string | null
+    paidAt: string | null
   } | null
   createdAt: string
 }
@@ -271,7 +275,51 @@ export default function AdminOrdersPage() {
                   {selectedOrder.customerPhone && (
                     <p><span className="font-medium text-foreground">Telefone:</span> {selectedOrder.customerPhone}</p>
                   )}
-                  <p><span className="font-medium text-foreground">Endereço:</span> {selectedOrder.address}, {selectedOrder.neighborhood}, {selectedOrder.city} - {selectedOrder.state}, {selectedOrder.zipCode}</p>
+                </div>
+              </div>
+
+              {/* Shipping info */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-foreground">Informacoes de Envio</h4>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>
+                    <span className="font-medium text-foreground">Endereco:</span>{' '}
+                    {selectedOrder.address}
+                    {selectedOrder.number && `, ${selectedOrder.number}`}
+                    {selectedOrder.complement && ` - ${selectedOrder.complement}`}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Bairro:</span>{' '}
+                    {selectedOrder.neighborhood || 'Nao informado'}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Cidade/Estado:</span>{' '}
+                    {selectedOrder.city} - {selectedOrder.state}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">CEP:</span>{' '}
+                    {selectedOrder.zipCode}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Metodo de Envio:</span>{' '}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                      selectedOrder.shippingMethod === 'sedex' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : selectedOrder.shippingMethod === 'pac'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedOrder.shippingMethod === 'sedex' 
+                        ? 'SEDEX' 
+                        : selectedOrder.shippingMethod === 'pac' 
+                        ? 'PAC' 
+                        : selectedOrder.shippingMethod || 'Nao informado'}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Valor do Frete:</span>{' '}
+                    <span className="text-primary font-semibold">{formatPrice(Number(selectedOrder.shipping))}</span>
+                  </p>
                 </div>
               </div>
 
@@ -322,16 +370,33 @@ export default function AdminOrdersPage() {
 
               {/* Payment */}
               {selectedOrder.payment && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">Pagamento</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    selectedOrder.payment.status === 'PAID' ? 'bg-green-100 text-green-800' :
-                    selectedOrder.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {selectedOrder.payment.status === 'PAID' ? 'Pago' :
-                     selectedOrder.payment.status === 'PENDING' ? 'Aguardando' : 'Falhou'}
-                  </span>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-foreground">Informacoes de Pagamento</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>
+                      <span className="font-medium text-foreground">Status:</span>{' '}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        selectedOrder.payment.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                        selectedOrder.payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedOrder.payment.status === 'PAID' ? 'Pago' :
+                         selectedOrder.payment.status === 'PENDING' ? 'Aguardando' : 'Falhou'}
+                      </span>
+                    </p>
+                    {selectedOrder.payment.transactionId && (
+                      <p>
+                        <span className="font-medium text-foreground">ID da Transacao:</span>{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">{selectedOrder.payment.transactionId}</code>
+                      </p>
+                    )}
+                    {selectedOrder.payment.paidAt && (
+                      <p>
+                        <span className="font-medium text-foreground">Data do Pagamento:</span>{' '}
+                        {new Date(selectedOrder.payment.paidAt).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
