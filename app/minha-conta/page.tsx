@@ -16,8 +16,12 @@ export default function MinhaContaPage() {
   const router = useRouter()
   const { user, isAuthenticated, loading, logout } = useAuth()
 
+  console.log("[v0] minha-conta: loading:", loading, "isAuthenticated:", isAuthenticated, "user:", user)
+
   useEffect(() => {
+    console.log("[v0] minha-conta useEffect: loading:", loading, "isAuthenticated:", isAuthenticated)
     if (!loading && !isAuthenticated) {
+      console.log("[v0] minha-conta: Redirecionando para login")
       router.push('/login')
     }
   }, [loading, isAuthenticated, router])
