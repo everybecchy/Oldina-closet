@@ -128,10 +128,8 @@ export async function POST(request: Request) {
         items: {
           create: items.map((item: { productId: string; name: string; quantity: number; price: number; image?: string }) => ({
             productId: item.productId,
-            name: item.name,
             quantity: item.quantity,
             price: item.price,
-            image: item.image || "",
           })),
         },
       },

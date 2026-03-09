@@ -63,10 +63,13 @@ model Order {
   customerEmail String
   customerPhone String?
   address       String
+  number        String?
+  complement    String?
   neighborhood  String?
   city          String
   state         String
   zipCode       String
+  shippingMethod String?
   status        OrderStatus @default(PENDING)
   subtotal      Decimal     @db.Decimal(10, 2)
   shipping      Decimal     @db.Decimal(10, 2)
