@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Montserrat } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { AuthProvider } from '@/lib/auth-context'
+import { StoreProvider } from '@/lib/store-context'
 import './globals.css'
 
 const cormorant = Cormorant_Garamond({ 
@@ -40,7 +42,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="bg-background">
       <body className={`${cormorant.variable} ${montserrat.variable} font-sans antialiased`}>
-        {children}
+        <AuthProvider>
+          <StoreProvider>
+            {children}
+          </StoreProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>
