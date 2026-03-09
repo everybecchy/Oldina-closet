@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/lib/auth"
+import { sendEmail } from "@/lib/email"
 
 export async function GET(request: Request) {
   try {
@@ -78,12 +79,34 @@ export async function GET(request: Request) {
             },
           })
 
-          // Se foi pago, atualizar status do pedido
+          // Se foi pago, atualizar status do pedido e enviar email
           if (newStatus === "PAID") {
-            await prisma.order.update({
+            const updatedOrder = await prisma.order.update({
               where: { id: payment.orderId },
               data: { status: "CONFIRMED" },
+              include: { items: { include: { product: true } } },
             })
+
+            // Enviar email de confirmação
+            try {
+              await sendEmail({
+                to: updatedOrder.customerEmail,
+                subject: `Pagamento Confirmado - Pedido #${updatedOrder.orderNumber}`,
+                templateType: "payment-status",
+                data: {
+                  orderNumber: updatedOrder.orderNumber,
+                  status: "CONFIRMADO",
+                  amount: updatedOrder.total.toString(),
+                  items: updatedOrder.items.map((item) => ({
+                    name: item.product?.name || "Produto",
+                    quantity: item.quantity,
+                    price: Number(item.price).toFixed(2),
+                  })),
+                },
+              })
+            } catch (emailError) {
+              console.error("[v0] Erro ao enviar email de confirmação:", emailError)
+            }
           }
         }
 
