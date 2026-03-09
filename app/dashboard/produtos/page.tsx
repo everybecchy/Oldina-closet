@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 const initialProducts = [
   {
@@ -243,15 +244,12 @@ export default function AdminProductsPage() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="image">URL da Imagem</Label>
-                <Input
-                  id="image"
-                  value={formData.image}
-                  onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                  placeholder="https://..."
-                />
-              </div>
+              <ImageUpload
+                label="Imagem do Produto"
+                value={formData.image}
+                onChange={(val) => setFormData(prev => ({ ...prev, image: val }))}
+                aspectRatio="square"
+              />
               <Button onClick={handleSave} className="w-full bg-primary hover:bg-primary/90">
                 {editingProduct ? 'Salvar Alterações' : 'Criar Produto'}
               </Button>
