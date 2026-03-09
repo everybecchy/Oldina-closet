@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Pencil, Trash2, MoreHorizontal, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,31 +21,54 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
-const initialCategories = [
-  { id: '1', name: 'Anéis', slug: 'aneis', description: 'Anéis elegantes para todas as ocasiões', products: 15 },
-  { id: '2', name: 'Colares', slug: 'colares', description: 'Colares sofisticados e delicados', products: 12 },
-  { id: '3', name: 'Brincos', slug: 'brincos', description: 'Brincos que realçam sua beleza', products: 18 },
-  { id: '4', name: 'Pulseiras', slug: 'pulseiras', description: 'Pulseiras para todos os estilos', products: 8 },
-  { id: '5', name: 'Conjuntos', slug: 'conjuntos', description: 'Conjuntos harmoniosos e exclusivos', products: 5 },
-]
+interface Category {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  image: string | null
+  productCount: number
+}
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState(initialCategories)
+  const [categories, setCategories] = useState<Category[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<typeof initialCategories[0] | null>(null)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
     description: '',
   })
 
-  const handleOpenDialog = (category?: typeof initialCategories[0]) => {
+  // Buscar categorias do banco
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/admin/categories')
+        const data = await response.json()
+        
+        if (data.categories) {
+          setCategories(data.categories)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar categorias:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchCategories()
+  }, [])
+
+  const handleOpenDialog = (category?: Category) => {
     if (category) {
       setEditingCategory(category)
       setFormData({
         name: category.name,
         slug: category.slug,
-        description: category.description,
+        description: category.description || '',
       })
     } else {
       setEditingCategory(null)
@@ -75,28 +98,70 @@ export default function AdminCategoriesPage() {
     }))
   }
 
-  const handleSave = () => {
-    if (editingCategory) {
-      setCategories(prev => prev.map(c => 
-        c.id === editingCategory.id 
-          ? { ...c, name: formData.name, slug: formData.slug, description: formData.description }
-          : c
-      ))
-    } else {
-      const newCategory = {
-        id: Date.now().toString(),
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const payload = {
+        id: editingCategory?.id,
         name: formData.name,
-        slug: formData.slug,
-        description: formData.description,
-        products: 0,
+        description: formData.description || null,
       }
-      setCategories(prev => [...prev, newCategory])
+
+      const response = await fetch('/api/admin/categories', {
+        method: editingCategory ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        if (editingCategory) {
+          setCategories(prev => prev.map(c => 
+            c.id === editingCategory.id ? { ...c, ...data.category } : c
+          ))
+        } else {
+          setCategories(prev => [...prev, data.category])
+        }
+        setIsDialogOpen(false)
+      } else {
+        alert(data.error || 'Erro ao salvar categoria')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar:', error)
+      alert('Erro ao salvar categoria')
+    } finally {
+      setIsSaving(false)
     }
-    setIsDialogOpen(false)
   }
 
-  const handleDelete = (id: string) => {
-    setCategories(prev => prev.filter(c => c.id !== id))
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta categoria?')) return
+    
+    try {
+      const response = await fetch(`/api/admin/categories?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setCategories(prev => prev.filter(c => c.id !== id))
+      } else {
+        alert(data.error || 'Erro ao excluir categoria')
+      }
+    } catch (error) {
+      console.error('Erro ao excluir:', error)
+      alert('Erro ao excluir categoria')
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -156,8 +221,19 @@ export default function AdminCategoriesPage() {
                   rows={3}
                 />
               </div>
-              <Button onClick={handleSave} className="w-full bg-primary hover:bg-primary/90">
-                {editingCategory ? 'Salvar Alterações' : 'Criar Categoria'}
+              <Button 
+                onClick={handleSave} 
+                className="w-full bg-primary hover:bg-primary/90"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingCategory ? 'Salvar Alterações' : 'Criar Categoria'
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -195,7 +271,7 @@ export default function AdminCategoriesPage() {
               <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Slug: <code className="bg-muted px-1 rounded">{category.slug}</code></span>
-                <span className="text-foreground font-medium">{category.products} produtos</span>
+                <span className="text-foreground font-medium">{category.productCount} produtos</span>
               </div>
             </CardContent>
           </Card>

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Plus, Search, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,72 +19,78 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { ImageUpload } from '@/components/ui/image-upload'
 
-const initialProducts = [
-  {
-    id: '1',
-    name: 'Anel Serena Dourado',
-    price: 189.90,
-    comparePrice: 249.90,
-    stock: 25,
-    category: 'Anéis',
-    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=200&q=80',
-    active: true,
-  },
-  {
-    id: '2',
-    name: 'Colar Pérolas Delicadas',
-    price: 299.90,
-    stock: 18,
-    category: 'Colares',
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=200&q=80',
-    active: true,
-  },
-  {
-    id: '3',
-    name: 'Brinco Gota Cristal',
-    price: 159.90,
-    stock: 32,
-    category: 'Brincos',
-    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80',
-    active: true,
-  },
-  {
-    id: '4',
-    name: 'Pulseira Elos Finos',
-    price: 219.90,
-    comparePrice: 279.90,
-    stock: 15,
-    category: 'Pulseiras',
-    image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=200&q=80',
-    active: true,
-  },
-  {
-    id: '5',
-    name: 'Anel Solitário Elegance',
-    price: 349.90,
-    stock: 8,
-    category: 'Anéis',
-    image: 'https://images.unsplash.com/photo-1603561596112-0a132b757442?w=200&q=80',
-    active: false,
-  },
-]
+interface Product {
+  id: string
+  name: string
+  price: number
+  comparePrice?: number | null
+  stock: number
+  category: string
+  categoryId: string
+  image: string
+  active: boolean
+}
+
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState(initialProducts)
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<typeof initialProducts[0] | null>(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     price: '',
     comparePrice: '',
     stock: '',
-    category: '',
+    categoryId: '',
     image: '',
   })
+
+  // Buscar produtos e categorias do banco
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productsRes, categoriesRes] = await Promise.all([
+          fetch('/api/admin/products'),
+          fetch('/api/admin/categories'),
+        ])
+        
+        const productsData = await productsRes.json()
+        const categoriesData = await categoriesRes.json()
+        
+        if (productsData.products) {
+          setProducts(productsData.products)
+        }
+        if (categoriesData.categories) {
+          setCategories(categoriesData.categories)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [])
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -98,7 +104,7 @@ export default function AdminProductsPage() {
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleOpenDialog = (product?: typeof initialProducts[0]) => {
+  const handleOpenDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product)
       setFormData({
@@ -106,7 +112,7 @@ export default function AdminProductsPage() {
         price: product.price.toString(),
         comparePrice: product.comparePrice?.toString() || '',
         stock: product.stock.toString(),
-        category: product.category,
+        categoryId: product.categoryId,
         image: product.image,
       })
     } else {
@@ -116,52 +122,109 @@ export default function AdminProductsPage() {
         price: '',
         comparePrice: '',
         stock: '',
-        category: '',
+        categoryId: categories[0]?.id || '',
         image: '',
       })
     }
     setIsDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingProduct) {
-      setProducts(prev => prev.map(p => 
-        p.id === editingProduct.id 
-          ? {
-              ...p,
-              name: formData.name,
-              price: parseFloat(formData.price),
-              comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
-              stock: parseInt(formData.stock),
-              category: formData.category,
-              image: formData.image,
-            }
-          : p
-      ))
-    } else {
-      const newProduct = {
-        id: Date.now().toString(),
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const payload = {
+        id: editingProduct?.id,
         name: formData.name,
         price: parseFloat(formData.price),
-        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
-        stock: parseInt(formData.stock),
-        category: formData.category,
-        image: formData.image || 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=200&q=80',
-        active: true,
+        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : null,
+        stock: parseInt(formData.stock) || 0,
+        categoryId: formData.categoryId,
+        image: formData.image,
+        images: formData.image ? [formData.image] : [],
       }
-      setProducts(prev => [...prev, newProduct])
+
+      const response = await fetch('/api/admin/products', {
+        method: editingProduct ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        if (editingProduct) {
+          setProducts(prev => prev.map(p => 
+            p.id === editingProduct.id ? data.product : p
+          ))
+        } else {
+          setProducts(prev => [...prev, data.product])
+        }
+        setIsDialogOpen(false)
+      } else {
+        alert(data.error || 'Erro ao salvar produto')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar:', error)
+      alert('Erro ao salvar produto')
+    } finally {
+      setIsSaving(false)
     }
-    setIsDialogOpen(false)
   }
 
-  const handleDelete = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id))
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este produto?')) return
+    
+    try {
+      const response = await fetch(`/api/admin/products?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setProducts(prev => prev.filter(p => p.id !== id))
+      } else {
+        alert(data.error || 'Erro ao excluir produto')
+      }
+    } catch (error) {
+      console.error('Erro ao excluir:', error)
+      alert('Erro ao excluir produto')
+    }
   }
 
-  const toggleActive = (id: string) => {
-    setProducts(prev => prev.map(p => 
-      p.id === id ? { ...p, active: !p.active } : p
-    ))
+  const toggleActive = async (id: string) => {
+    const product = products.find(p => p.id === id)
+    if (!product) return
+
+    try {
+      const response = await fetch('/api/admin/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          ...product,
+          active: !product.active,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setProducts(prev => prev.map(p => 
+          p.id === id ? { ...p, active: !p.active } : p
+        ))
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -236,12 +299,21 @@ export default function AdminProductsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoria</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    placeholder="Anéis"
-                  />
+                  <Select
+                    value={formData.categoryId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <ImageUpload
@@ -250,8 +322,19 @@ export default function AdminProductsPage() {
                 onChange={(val) => setFormData(prev => ({ ...prev, image: val }))}
                 aspectRatio="square"
               />
-              <Button onClick={handleSave} className="w-full bg-primary hover:bg-primary/90">
-                {editingProduct ? 'Salvar Alterações' : 'Criar Produto'}
+              <Button 
+                onClick={handleSave} 
+                className="w-full bg-primary hover:bg-primary/90"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingProduct ? 'Salvar Alterações' : 'Criar Produto'
+                )}
               </Button>
             </div>
           </DialogContent>
