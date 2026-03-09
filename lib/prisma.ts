@@ -6,11 +6,23 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-function createPrismaClient() {
+function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL
   
+  // During build time, DATABASE_URL may not be available
+  // Return a dummy client that will fail at runtime if actually used
   if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is not set')
+    // Return a proxy that throws helpful error when any method is called
+    return new Proxy({} as PrismaClient, {
+      get(_, prop) {
+        if (prop === 'then' || prop === 'catch') {
+          return undefined
+        }
+        return () => {
+          throw new Error('DATABASE_URL environment variable is not set. Please configure it in your Vercel project settings.')
+        }
+      }
+    })
   }
 
   const pool = new Pool({ connectionString })
