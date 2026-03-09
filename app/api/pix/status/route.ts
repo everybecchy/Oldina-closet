@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     // Consultar status na PenguimPay
     try {
       const statusResponse = await fetch(
-        `https://api.penguimpay.com/api/external/pix/deposit/${transactionId}`,
+        `https://api.penguimpay.com/v1/transactions/${transactionId}`,
         {
           headers: {
             "Authorization": `Bearer ${process.env.PENGUIM_PAY_PUBLIC_KEY}`,

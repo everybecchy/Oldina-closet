@@ -1,158 +1,194 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSessionUser } from "@/lib/auth"
 import { sendEmail } from "@/lib/email"
+
+// Tipos para a resposta da PenguimPay
+interface PenguimPayPixResponse {
+  id: string
+  qr_code: string
+  qr_code_base64?: string
+  qr_code_url?: string
+  pix_key?: string
+  status: string
+}
 
 export async function POST(request: Request) {
   try {
-    const { orderId } = await request.json()
+    const body = await request.json()
+    
+    const {
+      // Dados do cliente
+      customerName,
+      customerEmail,
+      customerPhone,
+      // Endereço
+      address,
+      number,
+      complement,
+      neighborhood,
+      city,
+      state,
+      zipCode,
+      // Itens e valores
+      items,
+      subtotal,
+      shipping,
+      discount,
+      couponCode,
+      shippingMethod,
+    } = body
 
-    if (!orderId) {
+    // Validações básicas
+    if (!customerName || !customerEmail || !customerPhone) {
       return NextResponse.json(
-        { error: "Order ID é obrigatório" },
+        { error: "Dados do cliente são obrigatórios" },
         { status: 400 }
       )
     }
 
-    // Buscar pedido
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    })
-
-    if (!order) {
+    if (!items || items.length === 0) {
       return NextResponse.json(
-        { error: "Pedido não encontrado" },
-        { status: 404 }
+        { error: "O carrinho está vazio" },
+        { status: 400 }
       )
     }
 
-    // Verificar se usuário tem permissão (se logado)
-    const user = await getSessionUser()
-    if (order.userId && user && order.userId !== user.id && !user.isAdmin) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 403 }
-      )
+    // Calcular total
+    const total = subtotal + shipping - (discount || 0)
+
+    // PRIMEIRO: Gerar PIX na PenguimPay
+    let pixData: PenguimPayPixResponse | null = null
+    let pixError: string | null = null
+
+    const penguimPayKey = process.env.PENGUIM_PAY_PUBLIC_KEY
+
+    if (penguimPayKey) {
+      try {
+        const pixResponse = await fetch("https://api.penguimpay.com/v1/transactions/pix-in", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${penguimPayKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: Math.round(total * 100), // PenguimPay usa centavos
+            externalId: `OC_${Date.now()}`,
+            description: `Compra Ondina Closet - ${customerName}`,
+            customer: {
+              name: customerName,
+              email: customerEmail,
+              phone: customerPhone.replace(/\D/g, ""),
+            },
+          }),
+        })
+
+        if (pixResponse.ok) {
+          pixData = await pixResponse.json()
+        } else {
+          const errorData = await pixResponse.json().catch(() => ({}))
+          console.error("[v0] PenguimPay erro:", errorData)
+          pixError = errorData.message || "Erro ao gerar PIX"
+        }
+      } catch (err) {
+        console.error("[v0] Erro ao chamar PenguimPay:", err)
+        pixError = "Falha na comunicação com gateway de pagamento"
+      }
     }
 
-    // Verificar se já existe um pagamento para este pedido
-    const existingPayment = await prisma.payment.findUnique({
-      where: { orderId: order.id },
-    })
+    // Se a API falhou, usar PIX manual como fallback
+    const manualPixKey = process.env.PIX_KEY || "pix@ondinacloset.store"
+    
+    const qrCode = pixData?.qr_code || manualPixKey
+    const qrCodeImage = pixData?.qr_code_base64 || pixData?.qr_code_url || null
+    const transactionId = pixData?.id || `manual_${Date.now()}`
 
-    if (existingPayment) {
-      // Retornar dados do pagamento existente
-      return NextResponse.json({
-        success: true,
-        payment: {
-          id: existingPayment.id,
-          qrCode: existingPayment.qrCode,
-          qrCodeImage: existingPayment.qrCodeImage,
-          pixKey: existingPayment.pixKey,
-          amount: existingPayment.amount.toString(),
-          transactionId: existingPayment.transactionId,
+    // SEGUNDO: Somente após ter o QR code, criar o pedido no banco
+    const orderNumber = `OC${Date.now().toString().slice(-8)}`
+
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        customerName,
+        customerEmail,
+        customerPhone,
+        address: address || "",
+        number: number || "",
+        complement: complement || "",
+        neighborhood: neighborhood || "",
+        city: city || "",
+        state: state || "",
+        zipCode: zipCode || "",
+        subtotal,
+        shipping,
+        discount: discount || 0,
+        total,
+        couponCode: couponCode || null,
+        shippingMethod: shippingMethod || "PAC",
+        status: "PENDING",
+        items: {
+          create: items.map((item: { productId: string; name: string; quantity: number; price: number; image?: string }) => ({
+            productId: item.productId,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            image: item.image || "",
+          })),
         },
-      })
-    }
-
-    // Criar PIX na PenguimPay
-    const pixResponse = await fetch("https://api.penguimpay.com/api/external/pix/deposit", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.PENGUIM_PAY_PUBLIC_KEY}`,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        amount: Number(order.total),
-        description: `Pedido ${order.orderNumber} - Ondina Closet`,
-        orderId: order.id,
-        customerEmail: order.customerEmail,
-        customerName: order.customerName,
-      }),
+      include: {
+        items: true,
+      },
     })
 
-    if (!pixResponse.ok) {
-      const error = await pixResponse.json().catch(() => ({}))
-      console.error("[v0] Erro PenguimPay:", error)
-      
-      // Se a API de pagamento falhar, criar PIX manual (fallback)
-      const manualPixKey = process.env.PIX_KEY || "pix@ondinacloset.com"
-      const payment = await prisma.payment.create({
-        data: {
-          orderId: order.id,
-          transactionId: `manual_${Date.now()}`,
-          qrCode: manualPixKey,
-          qrCodeImage: null,
-          pixKey: manualPixKey,
-          amount: order.total,
-          status: "PENDING",
-        },
-      })
-
-      return NextResponse.json({
-        success: true,
-        payment: {
-          id: payment.id,
-          qrCode: payment.qrCode,
-          qrCodeImage: payment.qrCodeImage,
-          pixKey: payment.pixKey,
-          amount: payment.amount.toString(),
-          transactionId: payment.transactionId,
-        },
-      })
-    }
-
-    const pixData = await pixResponse.json()
-
-    // Salvar transação no banco
+    // Criar registro de pagamento
     const payment = await prisma.payment.create({
       data: {
         orderId: order.id,
-        transactionId: pixData.id,
-        qrCode: pixData.qr_code,
-        qrCodeImage: pixData.qr_code_base64 || pixData.qr_code_url,
-        pixKey: pixData.pix_key || "",
+        transactionId,
+        qrCode,
+        qrCodeImage,
+        pixKey: pixData?.pix_key || manualPixKey,
         amount: order.total,
         status: "PENDING",
       },
     })
 
-    // Enviar email de confirmação com PIX
-    if (order.customerEmail) {
-      try {
-        await sendEmail({
-          to: order.customerEmail,
-          name: order.customerName,
-          subject: "Seu PIX para pagamento - Ondina Closet",
-          templateType: "payment-pix",
-          data: {
-            orderNumber: order.orderNumber,
-            amount: order.total.toString(),
-            qrCode: pixData.qr_code,
-            pixKey: pixData.pix_key || "",
-            items: order.items.map((item: any) => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price.toString(),
-            })),
-          },
-        })
-      } catch (emailError) {
-        console.error("[v0] Erro ao enviar email de PIX:", emailError)
-      }
+    // Enviar email de confirmação com PIX (não bloqueia a resposta)
+    if (customerEmail) {
+      sendEmail({
+        to: customerEmail,
+        name: customerName,
+        subject: `Pedido ${orderNumber} - Aguardando pagamento PIX`,
+        templateType: "payment-pix",
+        data: {
+          orderNumber,
+          amount: total.toFixed(2),
+          qrCode,
+          pixKey: pixData?.pix_key || manualPixKey,
+          items: order.items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price.toString(),
+          })),
+        },
+      }).catch((err) => console.error("[v0] Erro ao enviar email:", err))
     }
 
     return NextResponse.json({
       success: true,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+      },
       payment: {
         id: payment.id,
+        transactionId: payment.transactionId,
         qrCode: payment.qrCode,
         qrCodeImage: payment.qrCodeImage,
         pixKey: payment.pixKey,
         amount: payment.amount.toString(),
-        transactionId: payment.transactionId,
       },
+      ...(pixError && { warning: pixError }),
     })
   } catch (error) {
     console.error("[v0] Erro ao criar PIX:", error)
