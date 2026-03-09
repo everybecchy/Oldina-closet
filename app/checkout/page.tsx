@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { 
-  ChevronLeft, 
-  Truck, 
-  CheckCircle2, 
-  Loader2, 
-  Copy, 
+import {
+  ChevronLeft,
+  Truck,
+  CheckCircle2,
+  Loader2,
+  Copy,
   Check,
   Tag,
   X,
@@ -52,7 +52,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<CheckoutStep>("cart")
   const [isLoading, setIsLoading] = useState(false)
   const [orderNumber, setOrderNumber] = useState("")
-  
+
   // Form data
   const [formData, setFormData] = useState({
     name: "",
@@ -66,20 +66,20 @@ export default function CheckoutPage() {
     city: "",
     state: "",
   })
-  
+
   // Shipping
   const [freteOptions, setFreteOptions] = useState<FreteOption[]>([])
   const [selectedFrete, setSelectedFrete] = useState<FreteOption | null>(null)
   const [loadingCep, setLoadingCep] = useState(false)
   const [loadingFrete, setLoadingFrete] = useState(false)
   const [cepError, setCepError] = useState("")
-  
+
   // Coupon
   const [couponCode, setCouponCode] = useState("")
   const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null)
   const [couponError, setCouponError] = useState("")
   const [loadingCoupon, setLoadingCoupon] = useState(false)
-  
+
   // PIX
   const [pixData, setPixData] = useState<{
     qrCode: string
@@ -111,7 +111,7 @@ export default function CheckoutPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    
+
     if (name === "cep") {
       setFormData((prev) => ({ ...prev, [name]: formatCep(value) }))
     } else if (name === "phone") {
@@ -390,8 +390,8 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-4 lg:px-8 py-8">
         {/* Back link */}
-        <Link 
-          href="/produtos" 
+        <Link
+          href="/produtos"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-8"
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
@@ -401,33 +401,30 @@ export default function CheckoutPage() {
         {/* Progress steps */}
         <div className="flex items-center justify-center mb-12">
           <div className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              step === "cart" || step === "shipping" || step === "payment" 
-                ? "border-primary bg-primary text-primary-foreground" 
-                : "border-border text-muted-foreground"
-            }`}>
+            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${step === "cart" || step === "shipping" || step === "payment"
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-muted-foreground"
+              }`}>
               1
             </div>
             <span className="ml-2 text-sm font-medium text-foreground hidden sm:inline">Carrinho</span>
           </div>
           <div className={`w-16 h-0.5 mx-2 ${step !== "cart" ? "bg-primary" : "bg-border"}`} />
           <div className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              step === "shipping" || step === "payment" 
-                ? "border-primary bg-primary text-primary-foreground" 
-                : "border-border text-muted-foreground"
-            }`}>
+            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${step === "shipping" || step === "payment"
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-muted-foreground"
+              }`}>
               <Truck className="w-5 h-5" />
             </div>
             <span className="ml-2 text-sm font-medium text-foreground hidden sm:inline">Entrega</span>
           </div>
           <div className={`w-16 h-0.5 mx-2 ${step === "payment" ? "bg-primary" : "bg-border"}`} />
           <div className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              step === "payment" 
-                ? "border-primary bg-primary text-primary-foreground" 
-                : "border-border text-muted-foreground"
-            }`}>
+            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${step === "payment"
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-muted-foreground"
+              }`}>
               <QrCodeIcon className="w-5 h-5" />
             </div>
             <span className="ml-2 text-sm font-medium text-foreground hidden sm:inline">PIX</span>
@@ -473,7 +470,7 @@ export default function CheckoutPage() {
                   <h2 className="text-2xl font-light text-foreground mb-6">
                     Dados de <span className="font-medium italic">Entrega</span>
                   </h2>
-                  
+
                   {/* Dados pessoais */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -623,11 +620,10 @@ export default function CheckoutPage() {
                           {freteOptions.map((option) => (
                             <div
                               key={option.service}
-                              className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
-                                selectedFrete?.service === option.service
-                                  ? "border-primary bg-primary/5"
-                                  : "border-border hover:border-primary/50"
-                              }`}
+                              className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${selectedFrete?.service === option.service
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/50"
+                                }`}
                               onClick={() => setSelectedFrete(option)}
                             >
                               <div className="flex items-center gap-3">
@@ -655,8 +651,8 @@ export default function CheckoutPage() {
                     <Button type="button" variant="outline" onClick={() => setStep("cart")} className="flex-1 h-12">
                       Voltar
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="flex-1 h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
                       disabled={isLoading || !selectedFrete}
                     >
@@ -683,12 +679,14 @@ export default function CheckoutPage() {
                 <div className="bg-card rounded-xl border border-border p-6 text-center">
                   {/* QR Code */}
                   <div className="w-64 h-64 mx-auto bg-white p-4 rounded-lg mb-6 flex items-center justify-center">
-                    {pixData.qrCode && pixData.qrCode.length > 50 ? (
-                      <QRCodeSVG 
-                        value={pixData.qrCode} 
+                    {pixData.qrCode ? (
+                      <QRCodeSVG
+                        value={pixData.qrCode}
                         size={220}
                         level="M"
                         includeMargin={false}
+                        bgColor="#ffffff"
+                        fgColor="#000000"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-foreground/5 to-foreground/10 rounded flex items-center justify-center">
@@ -766,7 +764,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
               <h3 className="text-lg font-medium text-foreground mb-4">Resumo do Pedido</h3>
-              
+
               {/* Items */}
               <div className="space-y-3 mb-4">
                 {cart.map((item) => (
@@ -818,7 +816,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
               )}
-              
+
               <div className="space-y-3 text-sm border-t border-border pt-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
