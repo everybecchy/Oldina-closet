@@ -50,9 +50,9 @@ export function Header() {
             <Image
               src="/images/logo-ondina.png"
               alt="Ondina Closet"
-              width={160}
-              height={60}
-              className="h-14 w-auto"
+              width={280}
+              height={105}
+              className="h-24 w-auto"
               priority
             />
           </Link>
@@ -137,9 +137,9 @@ export function Header() {
               <Image
                 src="/images/logo-ondina.png"
                 alt="Ondina Closet"
-                width={120}
-                height={44}
-                className="h-11 w-auto"
+                width={200}
+                height={75}
+                className="h-16 w-auto"
               />
               <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
                 <X className="h-6 w-6" />
