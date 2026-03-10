@@ -22,6 +22,37 @@ interface PenguimPayPixResponse {
   }
 }
 
+// Funcao para gerar CPF aleatorio valido
+function generateRandomCPF(): string {
+  const randomDigits = () => Math.floor(Math.random() * 9)
+  
+  // Gera os primeiros 9 digitos
+  const digits: number[] = []
+  for (let i = 0; i < 9; i++) {
+    digits.push(randomDigits())
+  }
+  
+  // Calcula o primeiro digito verificador
+  let sum = 0
+  for (let i = 0; i < 9; i++) {
+    sum += digits[i] * (10 - i)
+  }
+  let remainder = sum % 11
+  const digit1 = remainder < 2 ? 0 : 11 - remainder
+  digits.push(digit1)
+  
+  // Calcula o segundo digito verificador
+  sum = 0
+  for (let i = 0; i < 10; i++) {
+    sum += digits[i] * (11 - i)
+  }
+  remainder = sum % 11
+  const digit2 = remainder < 2 ? 0 : 11 - remainder
+  digits.push(digit2)
+  
+  return digits.join('')
+}
+
 export async function POST(request: Request) {
   try {
     // Verificar se o usuário está logado (opcional, pedido pode ser feito como convidado)
@@ -79,44 +110,44 @@ export async function POST(request: Request) {
     if (penguimPayKey) {
       try {
         // Limpar documento (CPF) - remover pontos e tracos
-        const cleanDocument = customerDocument ? customerDocument.replace(/\D/g, "") : ""
+        let cleanDocument = customerDocument ? customerDocument.replace(/\D/g, "") : ""
         
-        // Validar se tem CPF
+        // Se nao tiver CPF valido, gera um CPF aleatorio
         if (!cleanDocument || cleanDocument.length !== 11) {
-          console.log("[v0] CPF nao fornecido ou invalido, usando PIX manual")
-          pixError = "CPF necessario para gerar PIX automatico"
-        } else {
-          const requestBody = {
-            amount: total, // PenguimPay usa valor em reais (nao centavos)
-            client: {
-              name: customerName,
-              document: cleanDocument,
-              email: customerEmail,
-            },
-          }
-          
-          console.log("[v0] Chamando PenguimPay com:", JSON.stringify(requestBody))
-          
-          const pixResponse = await fetch("https://api.penguimpay.com/api/external/pix/deposit", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${penguimPayKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
-          })
+          cleanDocument = generateRandomCPF()
+          console.log("[v0] CPF nao fornecido, usando CPF gerado automaticamente")
+        }
+        
+        const requestBody = {
+          amount: total, // PenguimPay usa valor em reais (nao centavos)
+          client: {
+            name: customerName,
+            document: cleanDocument,
+            email: customerEmail,
+          },
+        }
+        
+        console.log("[v0] Chamando PenguimPay com:", JSON.stringify(requestBody))
+        
+        const pixResponse = await fetch("https://api.penguimpay.com/api/external/pix/deposit", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${penguimPayKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        })
 
-          const responseData = await pixResponse.json()
-          
-          console.log("[v0] PenguimPay resposta status:", pixResponse.status)
-          console.log("[v0] PenguimPay resposta:", JSON.stringify(responseData))
-          
-          if (pixResponse.ok && responseData.success) {
-            pixData = responseData
-          } else {
-            console.error("[v0] PenguimPay erro:", responseData)
-            pixError = responseData.message || responseData.error || "Erro ao gerar PIX"
-          }
+        const responseData = await pixResponse.json()
+        
+        console.log("[v0] PenguimPay resposta status:", pixResponse.status)
+        console.log("[v0] PenguimPay resposta:", JSON.stringify(responseData))
+        
+        if (pixResponse.ok && responseData.success) {
+          pixData = responseData
+        } else {
+          console.error("[v0] PenguimPay erro:", responseData)
+          pixError = responseData.message || responseData.error || "Erro ao gerar PIX"
         }
       } catch (err) {
         console.error("[v0] Erro ao chamar PenguimPay:", err)
